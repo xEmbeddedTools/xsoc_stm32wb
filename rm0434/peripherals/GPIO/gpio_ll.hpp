@@ -272,26 +272,6 @@ private:
     };
 
 public:
-#if defined XMCU_GPIOA_PRESENT
-    using A = gpio_base::A;
-#endif
-
-#if defined XMCU_GPIOB_PRESENT
-    using B = gpio_base::B;
-#endif
-
-#if defined XMCU_GPIOC_PRESENT
-    using C = gpio_base::C;
-#endif
-
-#if defined XMCU_GPIOE_PRESENT
-    using E = gpio_base::E;
-#endif
-
-#if defined XMCU_GPIOH_PRESENT
-    using H = gpio_base::H;
-#endif
-
     struct MODER : public Reg_wrc<gpio_moder_descriptor>
     {
         using Flag = gpio_moder_descriptor::Flag;
