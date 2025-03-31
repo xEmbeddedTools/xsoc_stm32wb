@@ -14,7 +14,7 @@
 #include <cstdint>
 
 // xmcu
-#include <soc/ST/arm/m4/wb/rm0434/rcc.hpp>
+#include <soc/st/arm/m4/wb/rm0434/rcc.hpp>
 #include <xmcu/Non_copyable.hpp>
 #include <xmcu/bit.hpp>
 #include <xmcu/non_constructible.hpp>

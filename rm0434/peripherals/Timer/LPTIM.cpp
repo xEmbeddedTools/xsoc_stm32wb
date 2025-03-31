@@ -9,7 +9,7 @@
 // xmcu
 #include <rm0434/utils/tick_counter.hpp>
 #include <rm0434/utils/wait_until.hpp>
-#include <soc/ST/arm/m4/nvic.hpp>
+#include <soc/st/arm/m4/nvic.hpp>
 #include <soc/Scoped_guard.hpp>
 #include <xmcu/various.hpp>
 

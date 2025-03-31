@@ -21,7 +21,7 @@
 #include <rm0434/system/mcu/mcu.hpp>
 #include <rm0434/utils/tick_counter.hpp>
 #include <rm0434/utils/wait_until.hpp>
-#include <soc/ST/arm/IRQ_config.hpp>
+#include <soc/st/arm/IRQ_config.hpp>
 #include <soc/peripheral.hpp>
 #include <xmcu/Duration.hpp>
 #include <xmcu/Non_copyable.hpp>
