@@ -17,7 +17,7 @@
 #include <rm0434/clocks/sources/lsi.hpp>
 #include <rm0434/rcc.hpp>
 #include <rm0434/system/mcu/mcu.hpp>
-#include <soc/ST/arm/IRQ_config.hpp>
+#include <soc/st/arm/IRQ_config.hpp>
 #include <soc/Scoped_guard.hpp>
 #include <xmcu/Duration.hpp>
 #include <xmcu/non_constructible.hpp>

@@ -15,7 +15,7 @@
 #include <rm0434/DMA.hpp>
 #include <rm0434/peripherals/USART/LPUART.hpp>
 #include <rm0434/peripherals/USART/USART.hpp>
-#include <soc/ST/arm/IRQ_config.hpp>
+#include <soc/st/arm/IRQ_config.hpp>
 #include <soc/peripheral.hpp>
 #include <xmcu/Duration.hpp>
 #include <xmcu/Non_copyable.hpp>

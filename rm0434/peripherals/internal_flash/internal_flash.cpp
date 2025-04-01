@@ -15,7 +15,7 @@
 #include <rm0434/utils/wait_until.hpp>
 
 // debug
-#include <soc/ST/arm/m4/wb/rm0434/utils/delay.hpp>
+#include <soc/st/arm/m4/wb/rm0434/utils/delay.hpp>
 
 namespace {
 using namespace xmcu;

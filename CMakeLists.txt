@@ -31,5 +31,5 @@ endif()
 include_directories(XMCU_SOC PUBLIC
                     ${XMCU_PATH}
                     ${CMAKE_CURRENT_LIST_DIR}
-                    "${XMCU_PATH}/soc/ST/arm/CMSIS/Include"
+                    "${XMCU_PATH}/soc/st/arm/CMSIS/Include"
                     "${CMAKE_CURRENT_LIST_DIR}/CMSIS/Device/ST/STM32WBxx/Include")

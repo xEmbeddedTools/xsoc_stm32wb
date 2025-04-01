@@ -7,7 +7,7 @@
 #include <rm0434/peripherals/Timer/TIM.hpp>
 
 // xmcu
-#include <soc/ST/arm/m4/nvic.hpp>
+#include <soc/st/arm/m4/nvic.hpp>
 #include <soc/Scoped_guard.hpp>
 #include <xmcu/bit.hpp>
 

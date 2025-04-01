@@ -16,8 +16,8 @@
 #include <rm0434/system/mcu/mcu.hpp>
 #include <xmcu/Duration.hpp>
 #include <xmcu/non_constructible.hpp>
-#include <soc/ST/arm/IRQ_config.hpp>
-#include <soc/ST/arm/Systick.hpp>
+#include <soc/st/arm/IRQ_config.hpp>
+#include <soc/st/arm/Systick.hpp>
 
 namespace xmcu::soc::st::arm::m4::wb::rm0434::utils {
 template<typename Period_t> class tick_counter : private non_constructible
