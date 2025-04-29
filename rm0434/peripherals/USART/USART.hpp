@@ -17,6 +17,7 @@
 #include <rm0434/clocks/sources/hsi16.hpp>
 #include <rm0434/clocks/sources/lse.hpp>
 #include <rm0434/peripherals/GPIO/GPIO.hpp>
+#include <rm0434/peripherals/USART/usart_ll.hpp>
 #include <rm0434/rcc.hpp>
 #include <rm0434/system/mcu/mcu.hpp>
 #include <rm0434/utils/tick_counter.hpp>
