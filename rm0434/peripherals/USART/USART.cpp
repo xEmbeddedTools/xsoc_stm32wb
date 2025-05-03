@@ -24,63 +24,64 @@ using namespace xmcu::soc::st::arm::m4::wb::rm0434::utils;
 
 constexpr std::uint32_t clock_prescaler_lut[] = { 1u, 2u, 4u, 6u, 8u, 10u, 12u, 16u, 32u, 64u, 128u, 256u };
 
-bool is_rx_error(USART_TypeDef* a_p_registers)
+bool is_rx_error(ll::usart::Registers* a_p_registers)
 {
-    return bit::is_any(a_p_registers->ISR, USART_ISR_PE | USART_ISR_FE | USART_ISR_ORE | USART_ISR_NE);
+    return bit::is_any(a_p_registers->isr,
+                       ll::usart::ISR::pe | ll::usart::ISR::fe | ll::usart::ISR::ore | ll::usart::ISR::ne);
 }
 
-bool is_tx_error(USART_TypeDef* a_p_registers)
+bool is_tx_error(ll::usart::Registers* a_p_registers)
 {
-    return bit::is_any(a_p_registers->ISR, USART_ISR_PE | USART_ISR_NE);
+    return bit::is_any(a_p_registers->isr, ll::usart::ISR::pe | ll::usart::ISR::ne);
 }
 
-USART::Event_flag get_Event_flag_and_clear(volatile std::uint32_t* a_p_icr, std::uint32_t a_isr)
+USART::Event_flag get_Event_flag_and_clear(ll::usart::ICR* a_p_icr, ll::usart::ISR a_isr)
 {
     USART::Event_flag pending_events = USART::Event_flag::none;
-    std::uint32_t clear_mask = 0;
+    ll::usart::ICR clear_mask = ll::usart::ICR::none;
 
-    if (true == bit::flag::is(a_isr, USART_ISR_IDLE))
+    if (true == bit::flag::is(a_isr, ll::usart::ISR::idle))
     {
-        clear_mask |= USART_ICR_IDLECF;
+        clear_mask |= ll::usart::ICR::idlecf;
         pending_events |= USART::Event_flag::idle;
     }
-    if (true == bit::flag::is(a_isr, USART_ISR_TC))
+    if (true == bit::flag::is(a_isr, ll::usart::ISR::tc))
     {
-        clear_mask |= USART_ICR_TCCF;
+        clear_mask |= ll::usart::ICR::tccf;
         pending_events |= USART::Event_flag::transfer_complete;
     }
 
-    if (true == bit::flag::is(a_isr, USART_ISR_WUF))
+    if (true == bit::flag::is(a_isr, ll::usart::ISR::wuf))
     {
-        clear_mask |= USART_ICR_WUCF;
+        clear_mask |= ll::usart::ICR::wucf;
         pending_events |= USART::Event_flag::wakeup_from_stop;
     }
-    if (true == bit::flag::is(a_isr, USART_ISR_CMF))
+    if (true == bit::flag::is(a_isr, ll::usart::ISR::cmf))
     {
-        clear_mask |= USART_ICR_CMCF;
+        clear_mask |= ll::usart::ICR::cmcf;
         pending_events |= USART::Event_flag::character_matched;
     }
 
-    if (true == bit::is_any(a_isr, USART_ISR_PE | USART_ISR_FE | USART_ISR_ORE | USART_ISR_NE))
+    if (true == bit::is_any(a_isr, ll::usart::ISR::pe | ll::usart::ISR::fe | ll::usart::ISR::ore | ll::usart::ISR::ne))
     {
-        if (true == bit::flag::is(a_isr, USART_ISR_PE))
+        if (true == bit::flag::is(a_isr, ll::usart::ISR::pe))
         {
-            clear_mask |= USART_ICR_PECF;
+            clear_mask |= ll::usart::ICR::pecf;
             pending_events |= USART::Event_flag::parity_error;
         }
-        if (true == bit::flag::is(a_isr, USART_ISR_FE))
+        if (true == bit::flag::is(a_isr, ll::usart::ISR::fe))
         {
-            clear_mask |= USART_ICR_FECF;
+            clear_mask |= ll::usart::ICR::fecf;
             pending_events |= USART::Event_flag::framing_error;
         }
-        if (true == bit::flag::is(a_isr, USART_ISR_ORE))
+        if (true == bit::flag::is(a_isr, ll::usart::ISR::ore))
         {
-            clear_mask |= USART_ICR_ORECF;
+            clear_mask |= ll::usart::ICR::orecf;
             pending_events |= USART::Event_flag::overrun;
         }
-        if (true == bit::flag::is(a_isr, USART_ISR_NE))
+        if (true == bit::flag::is(a_isr, ll::usart::ISR::ne))
         {
-            clear_mask |= USART_ICR_NECF;
+            clear_mask |= ll::usart::ICR::necf;
             pending_events |= USART::Event_flag::noise_detected;
         }
     }
@@ -89,43 +90,43 @@ USART::Event_flag get_Event_flag_and_clear(volatile std::uint32_t* a_p_icr, std:
     return pending_events;
 }
 
-USART::Event_flag get_pending_events(std::uint32_t a_isr)
+USART::Event_flag get_pending_events(ll::usart::ISR a_isr)
 {
     USART::Event_flag pending_events = USART::Event_flag::none;
 
-    if (true == bit::flag::is(a_isr, USART_ISR_IDLE))
+    if (true == bit::flag::is(a_isr, ll::usart::ISR::idle))
     {
         pending_events |= USART::Event_flag::idle;
     }
-    if (true == bit::flag::is(a_isr, USART_ISR_TC))
+    if (true == bit::flag::is(a_isr, ll::usart::ISR::tc))
     {
         pending_events |= USART::Event_flag::transfer_complete;
     }
 
-    if (true == bit::flag::is(a_isr, USART_ISR_WUF))
+    if (true == bit::flag::is(a_isr, ll::usart::ISR::wuf))
     {
         pending_events |= USART::Event_flag::wakeup_from_stop;
     }
-    if (true == bit::flag::is(a_isr, USART_ISR_CMF))
+    if (true == bit::flag::is(a_isr, ll::usart::ISR::cmf))
     {
         pending_events |= USART::Event_flag::character_matched;
     }
 
-    if (true == bit::is_any(a_isr, USART_ISR_PE | USART_ISR_FE | USART_ISR_ORE | USART_ISR_NE))
+    if (true == bit::is_any(a_isr, ll::usart::ISR::pe | ll::usart::ISR::fe | ll::usart::ISR::ore | ll::usart::ISR::ne))
     {
-        if (true == bit::flag::is(a_isr, USART_ISR_PE))
+        if (true == bit::flag::is(a_isr, ll::usart::ISR::pe))
         {
             pending_events |= USART::Event_flag::parity_error;
         }
-        if (true == bit::flag::is(a_isr, USART_ISR_FE))
+        if (true == bit::flag::is(a_isr, ll::usart::ISR::fe))
         {
             pending_events |= USART::Event_flag::framing_error;
         }
-        if (true == bit::flag::is(a_isr, USART_ISR_ORE))
+        if (true == bit::flag::is(a_isr, ll::usart::ISR::ore))
         {
             pending_events |= USART::Event_flag::overrun;
         }
-        if (true == bit::flag::is(a_isr, USART_ISR_NE))
+        if (true == bit::flag::is(a_isr, ll::usart::ISR::ne))
         {
             pending_events |= USART::Event_flag::noise_detected;
         }
@@ -134,26 +135,26 @@ USART::Event_flag get_pending_events(std::uint32_t a_isr)
     return pending_events;
 }
 
-void clear_events(volatile std::uint32_t* a_p_icr, USART::Event_flag a_event_mask)
+void clear_events(ll::usart::ICR* a_p_icr, USART::Event_flag a_event_mask)
 {
-    std::uint32_t clear_mask = 0;
+    ll::usart::ICR clear_mask = ll::usart::ICR::none;
 
     if (USART::Event_flag::none != (a_event_mask & USART::Event_flag::idle))
     {
-        clear_mask |= USART_ICR_IDLECF;
+        clear_mask |= ll::usart::ICR::idlecf;
     }
     if (USART::Event_flag::none != (a_event_mask & USART::Event_flag::transfer_complete))
     {
-        clear_mask |= USART_ICR_TCCF;
+        clear_mask |= ll::usart::ICR::tccf;
     }
 
     if (USART::Event_flag::none != (a_event_mask & USART::Event_flag::wakeup_from_stop))
     {
-        clear_mask |= USART_ICR_WUCF;
+        clear_mask |= ll::usart::ICR::wucf;
     }
     if (USART::Event_flag::none != (a_event_mask & USART::Event_flag::character_matched))
     {
-        clear_mask |= USART_ICR_CMCF;
+        clear_mask |= ll::usart::ICR::cmcf;
     }
 
     if (USART::Event_flag::none != (a_event_mask & (USART::Event_flag::parity_error | USART::Event_flag::framing_error |
@@ -161,19 +162,19 @@ void clear_events(volatile std::uint32_t* a_p_icr, USART::Event_flag a_event_mas
     {
         if (USART::Event_flag::none != (a_event_mask & USART::Event_flag::parity_error))
         {
-            clear_mask |= USART_ICR_PECF;
+            clear_mask |= ll::usart::ICR::pecf;
         }
         if (USART::Event_flag::none != (a_event_mask & USART::Event_flag::framing_error))
         {
-            clear_mask |= USART_ICR_FECF;
+            clear_mask |= ll::usart::ICR::fecf;
         }
         if (USART::Event_flag::none != (a_event_mask & USART::Event_flag::overrun))
         {
-            clear_mask |= USART_ICR_ORECF;
+            clear_mask |= ll::usart::ICR::orecf;
         }
         if (USART::Event_flag::none != (a_event_mask & USART::Event_flag::noise_detected))
         {
-            clear_mask |= USART_ICR_NECF;
+            clear_mask |= ll::usart::ICR::necf;
         }
     }
 
@@ -198,16 +199,16 @@ template<typename Periph_t> typename Periph_t::Frame_format::Word_length get_Wor
     return USART::Frame_format::Word_length::_9_bit;
 }
 
-void enable(USART_TypeDef* a_p_registers,
+void enable(ll::usart::Registers* a_p_registers,
             const LPUART::Clock_config& a_clock_config,
             const LPUART::Transceiving_config& a_transceiving_config,
             const LPUART::Frame_format& a_frame_format,
             LPUART::Low_power_wakeup_method a_low_power_wakeup)
 {
-    a_p_registers->CR1 = 0x0u;
-    a_p_registers->CR2 = 0x0u;
-    a_p_registers->CR3 = 0x0u;
-    a_p_registers->PRESC = static_cast<std::uint32_t>(a_clock_config.prescaler);
+    a_p_registers->cr1 = ll::usart::CR1::none;
+    a_p_registers->cr2 = ll::usart::CR2::none;
+    a_p_registers->cr3 = ll::usart::CR3::none;
+    a_p_registers->presc = ll::usart::PRESC::none;
 
 #if defined(HKM_ASSERT_ENABLED)
     constexpr std::uint32_t BRR_min = 0x300u;
@@ -220,11 +221,11 @@ void enable(USART_TypeDef* a_p_registers,
 
     std::uint32_t brr = (clk_freq * 256u + (a_transceiving_config.baud_rate / 2)) / a_transceiving_config.baud_rate;
     hkm_assert(brr >= BRR_min && brr <= BRR_max);
-    a_p_registers->BRR = brr;
+    a_p_registers->brr = brr;
 #endif
 
 #if !defined(HKM_ASSERT_ENABLED)
-    a_p_registers->BRR =
+    a_p_registers->brr =
         ((a_clock_config.freq_Hz / clock_prescaler_lut[static_cast<std::uint32_t>(a_clock_config.prescaler)]) * 256u +
          (a_transceiving_config.baud_rate / 2u)) /
         a_transceiving_config.baud_rate;
@@ -233,52 +234,54 @@ void enable(USART_TypeDef* a_p_registers,
     if (LPUART::Transceiving_config::Flow_control_flag::RS232 ==
         (a_transceiving_config.flow_control & LPUART::Transceiving_config::Flow_control_flag::RS232))
     {
-        a_p_registers->CR3 = bit::flag::get(static_cast<std::uint32_t>(a_transceiving_config.flow_control),
-                                            USART_CR3_RTSE & USART_CR3_CTSE);
+        a_p_registers->cr3 = bit::flag::get(static_cast<ll::usart::CR3::Flag>(a_transceiving_config.flow_control),
+                                            ll::usart::CR3::rtse & ll::usart::CR3::ctse);
     }
 
     if (LPUART::Transceiving_config::Flow_control_flag::RS485 ==
         (a_transceiving_config.flow_control & LPUART::Transceiving_config::Flow_control_flag::RS485))
     {
-        a_p_registers->CR3 = USART_CR3_DEM;
-        bit::flag::set(&(a_p_registers->CR1),
-                       bit::flag::get(static_cast<std::uint32_t>(a_transceiving_config.flow_control),
-                                      USART_CR1_DEAT_Msk & USART_CR1_DEDT_Msk));
+        a_p_registers->cr3 = ll::usart::CR3::dem;
+        bit::flag::set(&(a_p_registers->cr1),
+                       bit::flag::get(static_cast<ll::usart::CR1::Flag>(a_transceiving_config.flow_control),
+                                      (0x1Fu << ll::usart::CR1::deat) & (0x1Fu << ll::usart::CR1::dedt)));
     }
 
     if (LPUART::Transceiving_config::Mute_method::character_matched ==
         static_cast<LPUART::Transceiving_config::Mute_method>(
             static_cast<std::uint32_t>(a_transceiving_config.mute_method) & 0x200u))
     {
-        bit::flag::set(&(a_p_registers->CR2),
+        bit::flag::set(&(a_p_registers->cr2),
                        ((bit::flag::get(static_cast<std::uint8_t>(a_transceiving_config.mute_method), 0xFFu))
-                        << USART_CR2_ADD_Pos) |
-                           USART_CR2_ADDM7);
-        bit::flag::set(&(a_p_registers->CR1), USART_CR1_MME | USART_CR1_WAKE);
-        a_p_registers->RQR = USART_RQR_MMRQ;
+                        << ll::usart::CR2::add) |
+                           ll::usart::CR2::addm7);
+        bit::flag::set(&(a_p_registers->cr1), ll::usart::CR1::mme | ll::usart::CR1::wake);
+        a_p_registers->rqr = ll::usart::RQR::mmrq;
     }
     else if (LPUART::Transceiving_config::Mute_method::idle_line == a_transceiving_config.mute_method)
     {
-        bit::flag::set(&(a_p_registers->CR1), USART_CR1_MME);
-        a_p_registers->RQR = USART_RQR_MMRQ;
+        bit::flag::set(&(a_p_registers->cr1), ll::usart::CR1::mme);
+        a_p_registers->rqr = ll::usart::RQR::mmrq;
     }
 
     if (USART::Low_power_wakeup_method::none != a_low_power_wakeup)
     {
-        bit::flag::set(&(a_p_registers->CR1), USART_CR1_UESM);
+        bit::flag::set(&(a_p_registers->cr1), ll::usart::CR1::uesm);
 
-        bit::flag::clear(&(a_p_registers->CR1), USART_CR1_UE);
-        bit::flag::set(&(a_p_registers->CR3), USART_CR3_WUS_Msk, static_cast<std::uint32_t>(a_low_power_wakeup));
+        bit::flag::clear(&(a_p_registers->cr1), ll::usart::CR1::ue);
+        bit::flag::set(
+            &(a_p_registers->cr3), 0x3u << ll::usart::CR3::wus, static_cast<ll::usart::CR3::Flag>(a_low_power_wakeup));
     }
 
-    bit::flag::set(&(a_p_registers->CR2), static_cast<std::uint32_t>(a_transceiving_config.stop_bits));
-    bit::flag::set(&(a_p_registers->CR1),
-                   static_cast<std::uint32_t>(a_transceiving_config.mode) |
-                       static_cast<std::uint32_t>(a_frame_format.parity) |
-                       static_cast<std::uint32_t>(a_frame_format.word_length) | USART_CR1_UE | USART_CR1_FIFOEN);
+    bit::flag::set(&(a_p_registers->cr2), static_cast<ll::usart::CR2::Flag>(a_transceiving_config.stop_bits));
+    bit::flag::set(&(a_p_registers->cr1),
+                   static_cast<ll::usart::CR1::Flag>(a_transceiving_config.mode) |
+                       static_cast<ll::usart::CR1::Flag>(a_frame_format.parity) |
+                       static_cast<ll::usart::CR1::Flag>(a_frame_format.word_length) | ll::usart::CR1::ue |
+                       ll::usart::CR1::fifoen);
 }
 
-void enable(USART_TypeDef* a_p_registers,
+void enable(ll::usart::Registers* a_p_registers,
             const USART::Clock_config& a_clock_config,
             const USART::Transceiving_config& a_transceiving_config,
             const USART::Frame_format& a_frame_format,
@@ -289,10 +292,10 @@ void enable(USART_TypeDef* a_p_registers,
     constexpr std::uint32_t BRR_max = 0xFFFFu;
 #endif
 
-    a_p_registers->CR1 = 0x0u;
-    a_p_registers->CR2 = 0x0u;
-    a_p_registers->CR3 = 0x0u;
-    a_p_registers->PRESC = static_cast<std::uint32_t>(a_clock_config.prescaler);
+    a_p_registers->cr1 = ll::usart::CR1::none;
+    a_p_registers->cr2 = ll::usart::CR2::none;
+    a_p_registers->cr3 = ll::usart::CR3::none;
+    a_p_registers->presc = ll::usart::PRESC::none;
 
     switch (a_transceiving_config.oversampling)
     {
@@ -303,16 +306,16 @@ void enable(USART_TypeDef* a_p_registers,
                 a_transceiving_config.baud_rate;
             hkm_assert(brr >= BRR_min && brr <= BRR_max);
 
-            a_p_registers->BRR = brr;
+            a_p_registers->brr = brr;
 #endif
 
 #if !defined(HKM_ASSERT_ENABLED)
-            a_p_registers->BRR =
+            a_p_registers->brr =
                 (a_clock_config.freq_Hz / clock_prescaler_lut[static_cast<std::uint32_t>(a_clock_config.prescaler)]) /
                 a_transceiving_config.baud_rate;
 #endif
 
-            bit::flag::clear(&(a_p_registers->CR1), USART_CR1_OVER8);
+            bit::flag::clear(&(a_p_registers->cr1), ll::usart::CR1::over8);
         }
         break;
 
@@ -325,7 +328,7 @@ void enable(USART_TypeDef* a_p_registers,
             std::uint32_t brr = ((usartdiv & 0xFFF0u) | ((usartdiv & 0xFu) >> 1)) & 0xFFFF;
             hkm_assert(brr >= BRR_min && brr <= BRR_max);
 
-            a_p_registers->BRR = brr;
+            a_p_registers->brr = brr;
 #endif
 
 #if !defined(HKM_ASSERT_ENABLED)
@@ -333,10 +336,10 @@ void enable(USART_TypeDef* a_p_registers,
                 (2 *
                  (a_clock_config.freq_Hz / clock_prescaler_lut[static_cast<std::uint32_t>(a_clock_config.prescaler)])) /
                 a_transceiving_config.baud_rate;
-            a_p_registers->BRR = ((usartdiv & 0xFFF0u) | ((usartdiv & 0xFu) >> 1)) & 0xFFFF;
+            a_p_registers->brr = ((usartdiv & 0xFFF0u) | ((usartdiv & 0xFu) >> 1)) & 0xFFFF;
 #endif
 
-            bit::flag::set(&(a_p_registers->CR1), USART_CR1_OVER8);
+            bit::flag::set(&(a_p_registers->cr1), ll::usart::CR1::over8);
         }
         break;
     }
@@ -344,130 +347,133 @@ void enable(USART_TypeDef* a_p_registers,
     if (USART::Transceiving_config::Flow_control_flag::RS232 ==
         (a_transceiving_config.flow_control & USART::Transceiving_config::Flow_control_flag::RS232))
     {
-        a_p_registers->CR3 = bit::flag::get(static_cast<std::uint32_t>(a_transceiving_config.flow_control),
-                                            USART_CR3_RTSE & USART_CR3_CTSE);
+        a_p_registers->cr3 = bit::flag::get(static_cast<ll::usart::CR3::Data>(a_transceiving_config.flow_control),
+                                            ll::usart::CR3::rtse & ll::usart::CR3::ctse);
     }
 
     if (USART::Transceiving_config::Flow_control_flag::RS485 ==
         (a_transceiving_config.flow_control & USART::Transceiving_config::Flow_control_flag::RS485))
     {
-        a_p_registers->CR3 = USART_CR3_DEM;
-        bit::flag::set(&(a_p_registers->CR1),
-                       bit::flag::get(static_cast<std::uint32_t>(a_transceiving_config.flow_control),
-                                      USART_CR1_DEAT_Msk & USART_CR1_DEDT_Msk));
+        a_p_registers->cr3 = ll::usart::CR3::dem;
+        bit::flag::set(&(a_p_registers->cr1),
+                       bit::flag::get(static_cast<ll::usart::CR1::Flag>(a_transceiving_config.flow_control),
+                                      (0x1Fu << ll::usart::CR1::deat) & (0x1Fu << ll::usart::CR1::dedt)));
     }
 
     if (USART::Transceiving_config::Mute_method::character_matched ==
         static_cast<USART::Transceiving_config::Mute_method>(
             static_cast<std::uint32_t>(a_transceiving_config.mute_method) & 0x200u))
     {
-        bit::flag::set(&(a_p_registers->CR2),
+        bit::flag::set(&(a_p_registers->cr2),
                        ((bit::flag::get(static_cast<std::uint8_t>(a_transceiving_config.mute_method), 0xFFu))
-                        << USART_CR2_ADD_Pos) |
-                           USART_CR2_ADDM7);
-        bit::flag::set(&(a_p_registers->CR1), USART_CR1_MME | USART_CR1_WAKE);
-        a_p_registers->RQR = USART_RQR_MMRQ;
+                        << ll::usart::CR2::add) |
+                           ll::usart::CR2::addm7);
+        bit::flag::set(&(a_p_registers->cr1), ll::usart::CR1::mme | ll::usart::CR1::wake);
+        a_p_registers->rqr = ll::usart::RQR::mmrq;
     }
     else if (USART::Transceiving_config::Mute_method::idle_line == a_transceiving_config.mute_method)
     {
-        bit::flag::set(&(a_p_registers->CR1), USART_CR1_MME);
+        bit::flag::set(&(a_p_registers->cr1), ll::usart::CR1::mme);
     }
 
     if (USART::Low_power_wakeup_method::none != a_low_power_wakeup)
     {
-        bit::flag::set(&(a_p_registers->CR1), USART_CR1_UESM);
+        bit::flag::set(&(a_p_registers->cr1), ll::usart::CR1::uesm);
 
-        bit::flag::clear(&(a_p_registers->CR1), USART_CR1_UE);
-        bit::flag::set(&(a_p_registers->CR3), USART_CR3_WUS_Msk, static_cast<std::uint32_t>(a_low_power_wakeup));
+        bit::flag::clear(&(a_p_registers->cr1), ll::usart::CR1::ue);
+        bit::flag::set(
+            &(a_p_registers->cr3), 0x3u << ll::usart::CR3::wus, static_cast<ll::usart::CR3::Data>(a_low_power_wakeup));
     }
 
-    bit::flag::set(&(a_p_registers->CR2), static_cast<std::uint32_t>(a_transceiving_config.stop_bits));
-    bit::flag::set(&(a_p_registers->CR1),
-                   static_cast<std::uint32_t>(a_transceiving_config.mode) |
-                       static_cast<std::uint32_t>(a_frame_format.parity) |
-                       static_cast<std::uint32_t>(a_frame_format.word_length) | USART_CR1_UE);
+    bit::flag::set(&(a_p_registers->cr2), static_cast<ll::usart::CR2::Flag>(a_transceiving_config.stop_bits));
+    bit::flag::set(&(a_p_registers->cr1),
+                   static_cast<ll::usart::CR1::Flag>(a_transceiving_config.mode) |
+                       static_cast<ll::usart::CR1::Flag>(a_frame_format.parity) |
+                       static_cast<ll::usart::CR1::Flag>(a_frame_format.word_length) | ll::usart::CR1::ue);
 }
 
-template<typename t_Data>
-USART::Polling::Result transmit(USART_TypeDef* a_p_registers, const t_Data* a_p_data, std::size_t a_data_size_in_words)
+template<typename t_Data> USART::Polling::Result
+transmit(ll::usart::Registers* a_p_registers, const t_Data* a_p_data, std::size_t a_data_size_in_words)
 {
     hkm_assert(a_data_size_in_words > 0);
 
-    bit::flag::set(&(a_p_registers->ICR), USART_ICR_TCCF);
+    bit::flag::set(&(a_p_registers->icr), ll::usart::ICR::tccf);
 
     std::size_t words = 0;
     USART::Event_flag events = USART::Event_flag::none;
     do
     {
-        if (true == bit::flag::is(a_p_registers->ISR, USART_ISR_TXE))
+        if (true == bit::flag::is(a_p_registers->isr, ll::usart::ISR::txe))
         {
-            a_p_registers->TDR = a_p_data[words++];
+            a_p_registers->tdr = a_p_data[words++];
         }
     } while (words < a_data_size_in_words && false == is_tx_error(a_p_registers));
 
     if (false == is_tx_error(a_p_registers))
     {
-        wait_until::all_bits_are_set(a_p_registers->ISR, USART_ISR_TC);
+        wait_until::all_bits_are_set(a_p_registers->isr, ll::usart::ISR::tc);
         events |= USART::Event_flag::transfer_complete;
     }
 
-    if (true == bit::is_any(a_p_registers->ISR, USART_ISR_PE | USART_ISR_FE | USART_ISR_NE))
+    if (true == bit::is_any(a_p_registers->isr, ll::usart::ISR::pe | ll::usart::ISR::fe | ll::usart::ISR::ne))
     {
-        if (true == bit::flag::is(a_p_registers->ISR, USART_ISR_PE))
+        if (true == bit::flag::is(a_p_registers->isr, ll::usart::ISR::pe))
         {
-            bit::flag::set(&(a_p_registers->ICR), USART_ICR_PECF);
+            bit::flag::set(&(a_p_registers->icr), ll::usart::ICR::pecf);
             events |= USART::Event_flag::parity_error;
         }
-        if (true == bit::flag::is(a_p_registers->ISR, USART_ISR_NE))
+        if (true == bit::flag::is(a_p_registers->isr, ll::usart::ISR::ne))
         {
-            bit::flag::set(&(a_p_registers->ICR), USART_ICR_NECF);
+            bit::flag::set(&(a_p_registers->icr), ll::usart::ICR::necf);
             events |= USART::Event_flag::noise_detected;
         }
     }
 
     return { events, words };
 }
-template<typename t_Data> USART::Polling::Result
-transmit(USART_TypeDef* a_p_registers, const t_Data* a_p_data, std::size_t a_data_size_in_words, Milliseconds a_timeout)
+template<typename t_Data> USART::Polling::Result transmit(ll::usart::Registers* a_p_registers,
+                                                          const t_Data* a_p_data,
+                                                          std::size_t a_data_size_in_words,
+                                                          Milliseconds a_timeout)
 {
     hkm_assert(a_data_size_in_words > 0);
     hkm_assert(a_timeout > 0_ms);
 
     const std::uint64_t start = tick_counter<Milliseconds>::get();
 
-    bit::flag::set(&(a_p_registers->ICR), USART_ICR_TCCF);
+    bit::flag::set(&(a_p_registers->icr), ll::usart::ICR::tccf);
 
     std::size_t words = 0;
     USART::Event_flag events = USART::Event_flag::none;
     do
     {
-        if (true == bit::flag::is(a_p_registers->ISR, USART_ISR_TXE))
+        if (true == bit::flag::is(a_p_registers->isr, ll::usart::ISR::txe))
         {
-            a_p_registers->TDR = a_p_data[words++];
+            a_p_registers->tdr = a_p_data[words++];
         }
     } while (words < a_data_size_in_words && false == is_tx_error(a_p_registers) &&
              a_timeout.get() > tick_counter<Milliseconds>::get() - start);
 
     if (false == is_tx_error(a_p_registers))
     {
-        if (true == wait_until::all_bits_are_set(a_p_registers->ISR,
-                                                 USART_ISR_TC,
+        if (true == wait_until::all_bits_are_set(a_p_registers->isr,
+                                                 ll::usart::ISR::tc,
                                                  a_timeout.get() - (tick_counter<Milliseconds>::get() - start)))
         {
             events |= USART::Event_flag::transfer_complete;
         }
     }
 
-    if (true == bit::is_any(a_p_registers->ISR, USART_ISR_PE | USART_ISR_FE | USART_ISR_NE))
+    if (true == bit::is_any(a_p_registers->isr, ll::usart::ISR::pe | ll::usart::ISR::fe | ll::usart::ISR::ne))
     {
-        if (true == bit::flag::is(a_p_registers->ISR, USART_ISR_PE))
+        if (true == bit::flag::is(a_p_registers->isr, ll::usart::ISR::pe))
         {
-            bit::flag::set(&(a_p_registers->ICR), USART_ICR_PECF);
+            bit::flag::set(&(a_p_registers->icr), ll::usart::ICR::pecf);
             events |= USART::Event_flag::parity_error;
         }
-        if (true == bit::flag::is(a_p_registers->ISR, USART_ISR_NE))
+        if (true == bit::flag::is(a_p_registers->isr, ll::usart::ISR::ne))
         {
-            bit::flag::set(&(a_p_registers->ICR), USART_ICR_NECF);
+            bit::flag::set(&(a_p_registers->icr), ll::usart::ICR::necf);
             events |= USART::Event_flag::noise_detected;
         }
     }
@@ -476,118 +482,118 @@ transmit(USART_TypeDef* a_p_registers, const t_Data* a_p_data, std::size_t a_dat
 }
 
 template<typename t_Data>
-USART::Polling::Result receive(USART_TypeDef* a_p_registers, t_Data* a_p_data, std::size_t a_data_size_in_words)
+USART::Polling::Result receive(ll::usart::Registers* a_p_registers, t_Data* a_p_data, std::size_t a_data_size_in_words)
 {
     hkm_assert(a_data_size_in_words > 0);
 
-    bit::flag::set(&(a_p_registers->ICR), USART_ICR_IDLECF);
+    bit::flag::set(&(a_p_registers->icr), ll::usart::ICR::idlecf);
 
     std::size_t words = 0;
 
-    while (false == bit::flag::is(a_p_registers->ISR, USART_ISR_IDLE) && false == is_rx_error(a_p_registers))
+    while (false == bit::flag::is(a_p_registers->isr, ll::usart::ISR::idle) && false == is_rx_error(a_p_registers))
     {
-        if (true == bit::flag::is(a_p_registers->ISR, USART_ISR_RXNE))
+        if (true == bit::flag::is(a_p_registers->isr, ll::usart::ISR::rxne))
         {
-            if (true == bit::flag::is(a_p_registers->ISR, USART_ISR_CMF) &&
-                true == bit::flag::is(a_p_registers->CR1, USART_CR1_MME | USART_CR1_WAKE))
+            if (true == bit::flag::is(a_p_registers->isr, ll::usart::ISR::cmf) &&
+                true == bit::flag::is(a_p_registers->cr1, ll::usart::CR1::mme | ll::usart::CR1::wake))
             {
-                bit::flag::set(&(a_p_registers->ICR), USART_ICR_CMCF);
+                bit::flag::set(&(a_p_registers->icr), ll::usart::ICR::cmcf);
             }
 
             if (words < a_data_size_in_words)
             {
-                a_p_data[words++] = static_cast<t_Data>(a_p_registers->RDR);
+                a_p_data[words++] = static_cast<t_Data>(a_p_registers->rdr);
             }
             else
             {
-                if (true == bit::flag::is(a_p_registers->ISR, USART_ISR_RXNE))
+                if (true == bit::flag::is(a_p_registers->isr, ll::usart::ISR::rxne))
                 {
-                    bit::flag::set(&(a_p_registers->RQR), USART_RQR_RXFRQ);
+                    bit::flag::set(&(a_p_registers->rqr), ll::usart::RQR::rxfrq);
                 }
             }
         }
     }
 
-    return { get_Event_flag_and_clear(&(a_p_registers->ICR), a_p_registers->ISR), words };
+    return { get_Event_flag_and_clear(&(a_p_registers->icr), a_p_registers->isr), words };
 }
 
 template<typename t_Data> USART::Polling::Result
-receive(USART_TypeDef* a_p_registers, t_Data* a_p_data, std::size_t a_data_size_in_words, Milliseconds a_timeout)
+receive(ll::usart::Registers* a_p_registers, t_Data* a_p_data, std::size_t a_data_size_in_words, Milliseconds a_timeout)
 {
     hkm_assert(a_data_size_in_words > 0);
     hkm_assert(a_timeout > 0_ms);
 
     const std::uint64_t start = tick_counter<Milliseconds>::get();
 
-    bit::flag::set(&(a_p_registers->ICR), USART_ICR_IDLECF);
+    bit::flag::set(&(a_p_registers->icr), ll::usart::ICR::idlecf);
 
     std::size_t words = 0;
 
-    while (false == bit::flag::is(a_p_registers->ISR, USART_ISR_IDLE) && false == is_rx_error(a_p_registers) &&
+    while (false == bit::flag::is(a_p_registers->isr, ll::usart::ISR::idle) && false == is_rx_error(a_p_registers) &&
            a_timeout.get() > tick_counter<Milliseconds>::get() - start)
     {
-        if (true == bit::flag::is(a_p_registers->ISR, USART_ISR_RXNE))
+        if (true == bit::flag::is(a_p_registers->isr, ll::usart::ISR::rxne))
         {
             if (words < a_data_size_in_words)
             {
-                a_p_data[words++] = static_cast<t_Data>(a_p_registers->RDR);
+                a_p_data[words++] = static_cast<t_Data>(a_p_registers->rdr);
             }
             else
             {
-                bit::flag::set(&(a_p_registers->RQR), USART_RQR_RXFRQ);
+                bit::flag::set(&(a_p_registers->rqr), ll::usart::RQR::rxfrq);
                 words++;
             }
         }
     }
 
-    if (true == bit::flag::is(a_p_registers->ISR, USART_ISR_CMF))
+    if (true == bit::flag::is(a_p_registers->isr, ll::usart::ISR::cmf))
     {
-        bit::flag::set(&(a_p_registers->ICR), USART_ICR_CMCF);
+        bit::flag::set(&(a_p_registers->icr), ll::usart::ICR::cmcf);
     }
 
-    return { get_Event_flag_and_clear(&(a_p_registers->ICR), a_p_registers->ISR), words };
+    return { get_Event_flag_and_clear(&(a_p_registers->icr), a_p_registers->isr), words };
 }
 
-void transmit_start(USART_TypeDef* a_p_registers)
+void transmit_start(ll::usart::Registers* a_p_registers)
 {
-    hkm_assert(true == bit::flag::is(a_p_registers->CR1, USART_CR1_TE));
+    hkm_assert(true == bit::flag::is(a_p_registers->cr1, ll::usart::CR1::te));
 
-    bit::flag::set(&(a_p_registers->ICR), USART_ICR_TCCF);
-    bit::flag::set(&(a_p_registers->CR1), USART_CR1_TXEIE | USART_CR1_TCIE);
+    bit::flag::set(&(a_p_registers->icr), ll::usart::ICR::tccf);
+    bit::flag::set(&(a_p_registers->cr1), ll::usart::CR1::txeie | ll::usart::CR1::tcie);
 }
 
-void receive_start(USART_TypeDef* a_p_registers)
+void receive_start(ll::usart::Registers* a_p_registers)
 {
-    hkm_assert(true == bit::flag::is(a_p_registers->CR1, USART_CR1_RE));
+    hkm_assert(true == bit::flag::is(a_p_registers->cr1, ll::usart::CR1::re));
 
-    bit::flag::set(&(a_p_registers->CR1), USART_CR1_RXNEIE);
+    bit::flag::set(&(a_p_registers->cr1), ll::usart::CR1::rxneie);
 }
 
-void event_listening_start(USART_TypeDef* a_p_registers, USART::Event_flag events)
+void event_listening_start(ll::usart::Registers* a_p_registers, USART::Event_flag events)
 {
     // FIXME: if not listening to all errors enabled by USART_CR3_EIE, it will cause interrupt loop due to error bits
     // not being cleared! Solutions: allow only listening to all errors at once? Clear all error bits in event handler?
-    clear_events(&a_p_registers->ICR, events);
+    clear_events(&a_p_registers->icr, events);
     if (USART::Event_flag::none != (events & USART::Event_flag::parity_error))
     {
-        bit::flag::set(&(a_p_registers->CR1), USART_CR1_PEIE);
+        bit::flag::set(&(a_p_registers->cr1), ll::usart::CR1::peie);
     }
     if (USART::Event_flag::none != (events & USART::Event_flag::idle))
     {
-        bit::flag::set(&(a_p_registers->CR1), USART_CR1_IDLEIE);
+        bit::flag::set(&(a_p_registers->cr1), ll::usart::CR1::idleie);
     }
     if (USART::Event_flag::none != (events & USART::Event_flag::transfer_complete))
     {
-        bit::flag::set(&(a_p_registers->CR1), USART_CR1_TCIE);
+        bit::flag::set(&(a_p_registers->cr1), ll::usart::CR1::tcie);
     }
     if (USART::Event_flag::none != (events & USART::Event_flag::character_matched))
     {
-        bit::flag::set(&(a_p_registers->CR1), USART_CR1_CMIE);
+        bit::flag::set(&(a_p_registers->cr1), ll::usart::CR1::cmie);
     }
-    bit::flag::set(&(a_p_registers->CR3), USART_CR3_EIE);
+    bit::flag::set(&(a_p_registers->cr3), ll::usart::CR3::eie);
 }
 
-void USART_interrupt_handler(USART_TypeDef* a_p_registers,
+void USART_interrupt_handler(ll::usart::Registers* a_p_registers,
                              USART::Interrupt::Transmit_callback* a_p_transmit_callback,
                              USART::Interrupt::Receive_callback* a_p_receive_callback,
                              USART::Interrupt::Event_callback* a_p_event_callback)
@@ -597,7 +603,7 @@ void USART_interrupt_handler(USART_TypeDef* a_p_registers,
     hkm_assert(nullptr != a_p_receive_callback);
     hkm_assert(nullptr != a_p_event_callback);
 
-    const std::uint32_t isr = a_p_registers->ISR;
+    const ll::usart::ISR isr = a_p_registers->isr;
 
     if (nullptr != a_p_event_callback->function)
     {
@@ -605,18 +611,19 @@ void USART_interrupt_handler(USART_TypeDef* a_p_registers,
         if (USART::Event_flag::none != pending_events)
         {
             a_p_event_callback->function(pending_events, a_p_event_callback->p_user_data);
-            clear_events(&a_p_registers->ICR, pending_events);
+            clear_events(&a_p_registers->icr, pending_events);
         }
     }
 
-    if (nullptr != a_p_transmit_callback->function && true == bit::flag::is(isr, USART_ISR_TXE))
+    if (nullptr != a_p_transmit_callback->function && true == bit::flag::is(isr, ll::usart::ISR::txe))
     {
-        a_p_transmit_callback->function(&(a_p_registers->TDR), a_p_transmit_callback->p_user_data);
+        a_p_transmit_callback->function(reinterpret_cast<std::uint32_t*>(&(a_p_registers->tdr)),
+                                        a_p_transmit_callback->p_user_data);
     }
 
-    if (nullptr != a_p_receive_callback->function && true == bit::flag::is(isr, USART_ISR_RXNE))
+    if (nullptr != a_p_receive_callback->function && true == bit::flag::is(isr, ll::usart::ISR::rxne))
     {
-        a_p_receive_callback->function(a_p_registers->RDR, a_p_receive_callback->p_user_data);
+        a_p_receive_callback->function(a_p_registers->rdr, a_p_receive_callback->p_user_data);
     }
 }
 
@@ -689,20 +696,13 @@ void USART::enable(const Clock_config& a_clock_config,
 
     ::enable(this->p_registers, a_clock_config, a_transceiving_config, a_frame_format, a_low_power_wakeup);
 
-    wait_until::all_bits_are_set(
-        this->p_registers->ISR,
-        (true == bit::flag::is(this->p_registers->CR1, USART_CR1_RE) ? (USART_ISR_REACK | USART_ISR_IDLE) : 0) |
-            (true == bit::flag::is(this->p_registers->CR1, USART_CR1_TE) ? USART_ISR_TEACK : 0) |
-            (a_transceiving_config.mute_method == Transceiving_config::Mute_method::idle_line ||
-             true == bit::flag::is(static_cast<std::uint32_t>(a_transceiving_config.mute_method),
-                                   static_cast<std::uint32_t>(Transceiving_config::Mute_method::character_matched) ?
-                                       USART_ISR_RWU :
-                                       0x0u)));
+    const ll::usart::ISR flags_to_wait =
+        (true == bit::flag::is(this->p_registers->cr1, ll::usart::CR1::re) ? ll::usart::ISR::reack :
+                                                                             ll::usart::ISR::none) |
+        (true == bit::flag::is(this->p_registers->cr1, ll::usart::CR1::te) ? ll::usart::ISR::teack :
+                                                                             ll::usart::ISR::none);
 
-    if (true == bit::flag::is(this->p_registers->ISR, USART_ISR_IDLE))
-    {
-        bit::flag::set(&(this->p_registers->ICR), USART_ICR_IDLECF);
-    }
+    wait_until::all_bits_are_set(this->p_registers->isr, flags_to_wait);
 }
 bool USART::enable(const Clock_config& a_clock_config,
                    const Transceiving_config& a_transceiving_config,
@@ -735,45 +735,36 @@ bool USART::enable(const Clock_config& a_clock_config,
 
     ::enable(this->p_registers, a_clock_config, a_transceiving_config, a_frame_format, a_low_power_wakeup);
 
-    bool ret = wait_until::all_bits_are_set(
-        this->p_registers->ISR,
-        (true == bit::flag::is(this->p_registers->CR1, USART_CR1_RE) ? (USART_ISR_REACK | USART_ISR_IDLE) : 0) |
-            (true == bit::flag::is(this->p_registers->CR1, USART_CR1_TE) ? USART_ISR_TEACK : 0) |
-            (a_transceiving_config.mute_method == Transceiving_config::Mute_method::idle_line ||
-             true == bit::flag::is(static_cast<std::uint32_t>(a_transceiving_config.mute_method),
-                                   static_cast<std::uint32_t>(Transceiving_config::Mute_method::character_matched) ?
-                                       USART_ISR_RWU :
-                                       0x0u)),
-        a_timeout.get() - (tick_counter<Milliseconds>::get() - start));
+    const ll::usart::ISR flags_to_wait =
+        (true == bit::flag::is(this->p_registers->cr1, ll::usart::CR1::re) ? ll::usart::ISR::reack :
+                                                                             ll::usart::ISR::none) |
+        (true == bit::flag::is(this->p_registers->cr1, ll::usart::CR1::te) ? ll::usart::ISR::teack :
+                                                                             ll::usart::ISR::none);
 
-    if (true == bit::flag::is(this->p_registers->ISR, USART_ISR_IDLE))
-    {
-        bit::flag::set(&(this->p_registers->ICR), USART_ICR_IDLECF);
-    }
-
-    return ret;
+    return wait_until::all_bits_are_set(
+        this->p_registers->isr, flags_to_wait, a_timeout.get() - (tick_counter<Milliseconds>::get() - start));
 }
 
 bool USART::enable_rx(Milliseconds a_timeout)
 {
-    bit::flag::set(&(this->p_registers->CR1), USART_CR1_RE);
-    return wait_until::all_bits_are_set(this->p_registers->ISR, USART_ISR_REACK, a_timeout);
+    bit::flag::set(&(this->p_registers->cr1), ll::usart::CR1::re);
+    return wait_until::all_bits_are_set(this->p_registers->isr, ll::usart::ISR::reack, a_timeout);
 }
 bool USART::disable_rx(Milliseconds a_timeout)
 {
-    bit::flag::clear(&(this->p_registers->CR1), USART_CR1_RE);
-    return wait_until::all_bits_are_cleared(this->p_registers->ISR, USART_ISR_REACK, a_timeout);
+    bit::flag::clear(&(this->p_registers->cr1), ll::usart::CR1::re);
+    return wait_until::all_bits_are_cleared(this->p_registers->isr, ll::usart::ISR::reack, a_timeout);
 }
 
 bool USART::enable_tx(Milliseconds a_timeout)
 {
-    bit::flag::set(&(this->p_registers->CR1), USART_CR1_TE);
-    return wait_until::all_bits_are_set(this->p_registers->ISR, USART_ISR_TEACK, a_timeout);
+    bit::flag::set(&(this->p_registers->cr1), ll::usart::CR1::te);
+    return wait_until::all_bits_are_set(this->p_registers->isr, ll::usart::ISR::teack, a_timeout);
 }
 bool USART::disable_tx(Milliseconds a_timeout)
 {
-    bit::flag::clear(&(this->p_registers->CR1), USART_CR1_TE);
-    return wait_until::all_bits_are_cleared(this->p_registers->ISR, USART_ISR_TEACK, a_timeout);
+    bit::flag::clear(&(this->p_registers->cr1), ll::usart::CR1::te);
+    return wait_until::all_bits_are_cleared(this->p_registers->isr, ll::usart::ISR::teack, a_timeout);
 }
 
 void USART::disable()
@@ -783,9 +774,9 @@ void USART::disable()
         this->interrupt.disable();
     }
 
-    this->p_registers->CR1 = 0;
-    this->p_registers->CR2 = 0;
-    this->p_registers->CR3 = 0;
+    this->p_registers->cr1 = ll::usart::CR1::none;
+    this->p_registers->cr2 = ll::usart::CR2::none;
+    this->p_registers->cr3 = ll::usart::CR3::none;
 }
 
 USART::Polling::Result USART::Polling::transmit(Not_null<const std::uint8_t*> a_p_data,
@@ -834,10 +825,10 @@ USART::Polling::receive(Not_null<std::uint16_t*> a_p_data, std::size_t a_data_si
 
 bool USART::Polling::is_transfer_complete()
 {
-    Event_flag pending_events = get_pending_events(this->p_USART->p_registers->ISR);
+    Event_flag pending_events = get_pending_events(this->p_USART->p_registers->isr);
     if (Event_flag::none != (pending_events & Event_flag::transfer_complete))
     {
-        clear_events(&this->p_USART->p_registers->ICR, Event_flag::transfer_complete);
+        clear_events(&this->p_USART->p_registers->icr, Event_flag::transfer_complete);
         return true;
     }
     return false;
@@ -864,8 +855,8 @@ void USART::Interrupt::disable()
 
     NVIC_DisableIRQ(this->p_USART->irqn);
 
-    bit::flag::clear(&(this->p_USART->p_registers->CR1), USART_CR1_UESM);
-    bit::flag::clear(&(this->p_USART->p_registers->CR3), USART_CR3_WUS_Msk);
+    bit::flag::clear(&(this->p_USART->p_registers->cr1), ll::usart::CR1::uesm);
+    bit::flag::clear(&(this->p_USART->p_registers->cr3), 0x3u << ll::usart::CR3::wus);
 
     USART_irq_context[this->p_USART->idx] = nullptr;
 }
@@ -905,7 +896,8 @@ void USART::Interrupt::transmit_stop()
 {
     Scoped_guard<nvic> guard;
 
-    bit::flag::clear(&(static_cast<USART_TypeDef*>(*(this->p_USART))->CR1), USART_CR1_TXEIE | USART_CR1_TCIE);
+    bit::flag::clear(&(static_cast<ll::usart::Registers*>(*(this->p_USART))->cr1),
+                     ll::usart::CR1::txeie | ll::usart::CR1::tcie);
 
     this->p_USART->transmit_callback = { .function = nullptr, .p_user_data = nullptr };
 }
@@ -914,7 +906,8 @@ void USART::Interrupt::receive_stop()
 {
     Scoped_guard<nvic> guard;
 
-    bit::flag::clear(&(static_cast<USART_TypeDef*>(*(this->p_USART))->CR1), USART_CR1_RXNEIE | USART_CR1_IDLEIE);
+    bit::flag::clear(&(static_cast<ll::usart::Registers*>(*(this->p_USART))->cr1),
+                     ll::usart::CR1::rxneie | ll::usart::CR1::idleie);
 
     this->p_USART->receive_callback = { .function = nullptr, .p_user_data = nullptr };
 }
@@ -923,8 +916,8 @@ void USART::Interrupt::event_listening_stop()
 {
     Scoped_guard<nvic> guard;
 
-    bit::flag::clear(&(this->p_USART->p_registers->CR1), USART_CR1_PEIE | USART_CR1_IDLEIE);
-    bit::flag::clear(&(this->p_USART->p_registers->CR3), USART_CR3_EIE);
+    bit::flag::clear(&(this->p_USART->p_registers->cr1), ll::usart::CR1::peie | ll::usart::CR1::idleie);
+    bit::flag::clear(&(this->p_USART->p_registers->cr3), ll::usart::CR3::eie);
 
     this->p_USART->event_callback = { .events = USART::Event_flag::none, .function = nullptr, .p_user_data = nullptr };
 }
@@ -959,15 +952,17 @@ void LPUART::enable(const Clock_config& a_clock_config,
     ::enable(this->p_registers, a_clock_config, a_transceiving_config, a_frame_format, a_low_power_wakeup);
 
     return wait_until::all_bits_are_set(
-        this->p_registers->ISR,
-        (true == bit::flag::is(this->p_registers->CR1, USART_CR1_RE) ? (USART_ISR_REACK | USART_ISR_IDLE) : 0) |
-            (true == bit::flag::is(this->p_registers->CR1, USART_CR1_TE) ? USART_ISR_TEACK : 0) |
+        this->p_registers->isr,
+        (true == bit::flag::is(this->p_registers->cr1, ll::usart::CR1::re) ? (ll::usart::ISR::reack) :
+                                                                             ll::usart::ISR::none) |
+            (true == bit::flag::is(this->p_registers->cr1, ll::usart::CR1::te) ? ll::usart::ISR::teack :
+                                                                                 ll::usart::ISR::none) |
             (a_transceiving_config.mute_method == Transceiving_config::Mute_method::idle_line ||
-             true ==
-                 bit::flag::is(static_cast<std::uint32_t>(a_transceiving_config.mute_method),
-                               static_cast<std::uint32_t>(USART::Transceiving_config::Mute_method::character_matched) ?
-                                   USART_ISR_RWU :
-                                   0x0u)));
+                     true == bit::flag::is(static_cast<std::uint32_t>(a_transceiving_config.mute_method),
+                                           static_cast<std::uint32_t>(
+                                               USART::Transceiving_config::Mute_method::character_matched)) ?
+                 ll::usart::ISR::rwu :
+                 ll::usart::ISR::none));
 }
 
 bool LPUART::enable(const Clock_config& a_clock_config,
@@ -1005,15 +1000,17 @@ bool LPUART::enable(const Clock_config& a_clock_config,
     ::enable(this->p_registers, a_clock_config, a_transceiving_config, a_frame_format, a_low_power_wakeup);
 
     return wait_until::all_bits_are_set(
-        this->p_registers->ISR,
-        (true == bit::flag::is(this->p_registers->CR1, USART_CR1_RE) ? (USART_ISR_REACK | USART_ISR_IDLE) : 0) |
-            (true == bit::flag::is(this->p_registers->CR1, USART_CR1_TE) ? USART_ISR_TEACK : 0) |
+        this->p_registers->isr,
+        (true == bit::flag::is(this->p_registers->cr1, ll::usart::CR1::re) ? (ll::usart::ISR::reack) :
+                                                                             ll::usart::ISR::none) |
+            (true == bit::flag::is(this->p_registers->cr1, ll::usart::CR1::te) ? ll::usart::ISR::teack :
+                                                                                 ll::usart::ISR::none) |
             (a_transceiving_config.mute_method == Transceiving_config::Mute_method::idle_line ||
-             true ==
-                 bit::flag::is(static_cast<std::uint32_t>(a_transceiving_config.mute_method),
-                               static_cast<std::uint32_t>(USART::Transceiving_config::Mute_method::character_matched) ?
-                                   USART_ISR_RWU :
-                                   0x0u)),
+                     true == bit::flag::is(static_cast<std::uint32_t>(a_transceiving_config.mute_method),
+                                           static_cast<std::uint32_t>(
+                                               USART::Transceiving_config::Mute_method::character_matched)) ?
+                 ll::usart::ISR::rwu :
+                 ll::usart::ISR::none),
         a_timeout.get() - (tick_counter<Milliseconds>::get() - start));
 }
 
@@ -1024,9 +1021,9 @@ void LPUART::disable()
         this->interrupt.disable();
     }
 
-    this->p_registers->CR1 = 0;
-    this->p_registers->CR2 = 0;
-    this->p_registers->CR3 = 0;
+    this->p_registers->cr1 = ll::usart::CR1::none;
+    this->p_registers->cr2 = ll::usart::CR2::none;
+    this->p_registers->cr3 = ll::usart::CR3::none;
 }
 
 LPUART::Polling::Result LPUART::Polling::transmit(Not_null<const std::uint8_t*> a_p_data,
@@ -1132,7 +1129,8 @@ void LPUART::Interrupt::transmit_stop()
 {
     Scoped_guard<nvic> guard;
 
-    bit::flag::clear(&(static_cast<USART_TypeDef*>(*(this->p_LPUART))->CR1), USART_CR1_TXEIE | USART_CR1_TCIE);
+    bit::flag::clear(&(static_cast<ll::usart::Registers*>(*(this->p_LPUART))->cr1),
+                     ll::usart::CR1::txeie | ll::usart::CR1::tcie);
 
     this->p_LPUART->transmit_callback = { .function = nullptr, .p_user_data = nullptr };
 }
@@ -1141,7 +1139,8 @@ void LPUART::Interrupt::receive_stop()
 {
     Scoped_guard<nvic> guard;
 
-    bit::flag::clear(&(static_cast<USART_TypeDef*>(*(this->p_LPUART))->CR1), USART_CR1_RXNEIE | USART_CR1_IDLEIE);
+    bit::flag::clear(&(static_cast<ll::usart::Registers*>(*(this->p_LPUART))->cr1),
+                     ll::usart::CR1::rxneie | ll::usart::CR1::idleie);
 
     this->p_LPUART->receive_callback = { .function = nullptr, .p_user_data = nullptr };
 }
@@ -1150,8 +1149,8 @@ void LPUART::Interrupt::event_listening_stop()
 {
     Scoped_guard<nvic> guard;
 
-    bit::flag::clear(&(this->p_LPUART->p_registers->CR1), USART_CR1_PEIE | USART_CR1_IDLEIE);
-    bit::flag::clear(&(this->p_LPUART->p_registers->CR3), USART_CR3_EIE);
+    bit::flag::clear(&(this->p_LPUART->p_registers->cr1), ll::usart::CR1::peie | ll::usart::CR1::idleie);
+    bit::flag::clear(&(this->p_LPUART->p_registers->cr3), ll::usart::CR3::eie);
 
     this->p_LPUART->event_callback = { .events = LPUART::Event_flag::none,
                                        .function = nullptr,
