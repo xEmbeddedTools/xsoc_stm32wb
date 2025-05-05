@@ -376,9 +376,9 @@ public:
     };
     struct BRR : public Reg_wrc<brr_descriptor, std::uint32_t>
     {
-        BRR& operator=(Limited<std::uint32_t, 0x0u, 0xFFFFu> value_a)
+        BRR& operator=(uint32_t value_a)
         {
-            this->v = (value_a.get());
+            this->v = value_a;
             return *this;
         }
     };
@@ -554,7 +554,7 @@ constexpr usart::CR1::Data operator|(usart::CR1::Data left_a, usart::CR1::Data r
 {
     return static_cast<usart::CR1::Data>(static_cast<std::uint32_t>(left_a) | static_cast<std::uint32_t>(right_a));
 }
-constexpr usart::CR1::Data operator&(usart::CR1::Data left_a, usart::CR1::Data right_a)
+inline usart::CR1::Data operator&(usart::CR1::Data left_a, usart::CR1::Data right_a)
 {
     return static_cast<usart::CR1::Data>(static_cast<std::uint32_t>(left_a) & static_cast<std::uint32_t>(right_a));
 }
