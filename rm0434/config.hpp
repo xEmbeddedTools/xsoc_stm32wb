@@ -25,6 +25,9 @@
 #define XMCU_GPIOE_PRESENT
 #define XMCU_GPIOH_PRESENT
 
+// USART
+#define XMCU_USART1_PRESENT
+
 // clock sources
 #define XMCU_HSE_PRESENT
 #define XMCU_HSI16_PRESENT
