@@ -13,6 +13,7 @@
 #include <xmcu/Duration.hpp>
 #include <xmcu/Non_copyable.hpp>
 #include <xmcu/bit.hpp>
+#include <xmcu/time_utils.hpp>
 
 namespace xmcu::soc::st::arm::m4::wb::rm0434::peripherals {
 class backup_domain : non_constructible
@@ -66,9 +67,9 @@ public:
      *
      * This is not to be used near sleep/stop modes.
      *
-     * @return RTC time, rounded down to a second, in milliseonds.
+     * @return RTC time, rounded down to a second.
      */
-    static Milliseconds get_time();
+    static time_utils::Timestamp get_time();
 
     static uint32_t read_bkp_register(std::size_t a_index);
 

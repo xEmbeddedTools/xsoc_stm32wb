@@ -7,11 +7,11 @@
 #include <stm32wbxx.h>
 
 // xmcu
-#include <xmcu/Duration.hpp>
-#include <xmcu/bit.hpp>
 #include <rm0434/peripherals/rtc/rtc.hpp>
 #include <rm0434/utils/tick_counter.hpp>
 #include <rm0434/utils/wait_until.hpp>
+#include <xmcu/Duration.hpp>
+#include <xmcu/bit.hpp>
 #include <xmcu/time_utils.hpp>
 
 namespace {
@@ -152,7 +152,7 @@ bool rtc::is_clock_set()
     return is_set;
 }
 
-Milliseconds rtc::get_time()
+time_utils::Timestamp rtc::get_time()
 {
     // TODO: perhaps TR/DR latch prevention could be moved to the end of set_clock()? But it's safer here.
     rtc::wait_for_sync();
@@ -172,21 +172,19 @@ Milliseconds rtc::get_time()
     // The DR/SSR values will be latched after TR read, until DR is read.
     std::uint32_t date = RTC->DR;
 
-    time_utils::Timestamp timestamp = { .time = { .hour = (bit::flag::get(time, RTC_TR_HT) >> RTC_TR_HT_Pos) * 10 +
-                                                          (bit::flag::get(time, RTC_TR_HU) >> RTC_TR_HU_Pos),
-                                                  .minute = (bit::flag::get(time, RTC_TR_MNT) >> RTC_TR_MNT_Pos) * 10 +
-                                                            (bit::flag::get(time, RTC_TR_MNU) >> RTC_TR_MNU_Pos),
-                                                  .second = (bit::flag::get(time, RTC_TR_ST) >> RTC_TR_ST_Pos) * 10 +
-                                                            (bit::flag::get(time, RTC_TR_SU) >> RTC_TR_SU_Pos) },
-                                        .date = { .day = (bit::flag::get(date, RTC_DR_DT) >> RTC_DR_DT_Pos) * 10 +
-                                                         (bit::flag::get(date, RTC_DR_DU) >> RTC_DR_DU_Pos),
-                                                  .month = (bit::flag::get(date, RTC_DR_MT) >> RTC_DR_MT_Pos) * 10 +
-                                                           (bit::flag::get(date, RTC_DR_MU) >> RTC_DR_MU_Pos),
-                                                  .year = 2000 +
-                                                          (bit::flag::get(date, RTC_DR_YT) >> RTC_DR_YT_Pos) * 10 +
-                                                          (bit::flag::get(date, RTC_DR_YU) >> RTC_DR_YU_Pos) } };
-    Milliseconds world_millis(time_utils::to_unix_epoch(timestamp) * 1000u);
-    return world_millis;
+    return time_utils::Timestamp { .time = { .hour = (bit::flag::get(time, RTC_TR_HT) >> RTC_TR_HT_Pos) * 10 +
+                                                     (bit::flag::get(time, RTC_TR_HU) >> RTC_TR_HU_Pos),
+                                             .minute = (bit::flag::get(time, RTC_TR_MNT) >> RTC_TR_MNT_Pos) * 10 +
+                                                       (bit::flag::get(time, RTC_TR_MNU) >> RTC_TR_MNU_Pos),
+                                             .second = (bit::flag::get(time, RTC_TR_ST) >> RTC_TR_ST_Pos) * 10 +
+                                                       (bit::flag::get(time, RTC_TR_SU) >> RTC_TR_SU_Pos) },
+                                   .date = { .day = (bit::flag::get(date, RTC_DR_DT) >> RTC_DR_DT_Pos) * 10 +
+                                                    (bit::flag::get(date, RTC_DR_DU) >> RTC_DR_DU_Pos),
+                                             .month = (bit::flag::get(date, RTC_DR_MT) >> RTC_DR_MT_Pos) * 10 +
+
+                                                      (bit::flag::get(date, RTC_DR_MU) >> RTC_DR_MU_Pos),
+                                             .year = 2000 + (bit::flag::get(date, RTC_DR_YT) >> RTC_DR_YT_Pos) * 10 +
+                                                     (bit::flag::get(date, RTC_DR_YU) >> RTC_DR_YU_Pos) } };
 }
 
 void rtc::wait_for_sync()

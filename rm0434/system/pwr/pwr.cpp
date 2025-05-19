@@ -99,4 +99,16 @@ template<> void pwr<mcu<1u>>::stop_mode::enter<hsi16>(Type a_type,
         break;
     }
 }
+
+bool pwr<mcu<1u>>::backup_domain::enable(Milliseconds timeout_a)
+{
+    bit::flag::set(&(PWR->CR1), PWR_CR1_DBP);
+    return wait_until::all_bits_are_cleared(PWR->CR1, PWR_CR1_DBP, timeout_a);
+}
+
+bool pwr<mcu<1u>>::backup_domain::disable(Milliseconds timeout_a)
+{
+    bit::flag::clear(&(PWR->CR1), PWR_CR1_DBP);
+    return wait_until::all_bits_are_set(PWR->CR1, PWR_CR1_DBP, timeout_a);
+}
 } // namespace xmcu::soc::st::arm::m4::wb::rm0434::system
