@@ -184,9 +184,9 @@ public:
     }
 };
 
-constexpr mcu<1u>::Reset_source operator~(mcu<1u>::Reset_source a_rhs)
+constexpr mcu<1u>::Reset_source operator~(mcu<1u>::Reset_source flag_a)
 {
-    return static_cast<mcu<1u>::Reset_source>(~static_cast<std::uint32_t>(a_rhs));
+    return static_cast<mcu<1u>::Reset_source>(~static_cast<std::uint32_t>(flag_a));
 }
 
 constexpr mcu<1u>::Reset_source operator|(mcu<1u>::Reset_source left_a, mcu<1u>::Reset_source right_a)
@@ -198,14 +198,14 @@ constexpr mcu<1u>::Reset_source operator&(mcu<1u>::Reset_source left_a, mcu<1u>:
     return static_cast<mcu<1u>::Reset_source>(static_cast<std::uint32_t>(left_a) & static_cast<std::uint32_t>(right_a));
 }
 
-constexpr mcu<1u>::Reset_source& operator&=(mcu<1u>::Reset_source& a_lhs, mcu<1u>::Reset_source a_rhs)
+constexpr mcu<1u>::Reset_source& operator&=(mcu<1u>::Reset_source& left_a, mcu<1u>::Reset_source right_a)
 {
-    a_lhs = (a_lhs & a_rhs);
-    return a_lhs;
+    left_a = (left_a & right_a);
+    return left_a;
 }
-constexpr mcu<1u>::Reset_source& operator|=(mcu<1u>::Reset_source& a_lhs, mcu<1u>::Reset_source a_rhs)
+constexpr mcu<1u>::Reset_source& operator|=(mcu<1u>::Reset_source& left_a, mcu<1u>::Reset_source right_a)
 {
-    a_lhs = (a_lhs | a_rhs);
-    return a_lhs;
+    left_a = (left_a | right_a);
+    return left_a;
 }
 } // namespace xmcu::soc::st::arm::m4::wb::rm0434::system
