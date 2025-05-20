@@ -12,13 +12,13 @@
 #include <stm32wbxx.h>
 
 // xmcu
-#include <xmcu/non_constructible.hpp>
 #include <rm0434/clocks/sources/hse.hpp>
 #include <rm0434/clocks/sources/hsi16.hpp>
 #include <rm0434/clocks/sources/msi.hpp>
 #include <rm0434/clocks/sources/pll.hpp>
 #include <rm0434/peripherals/internal_flash/internal_flash.hpp>
 #include <rm0434/system/mcu/mcu.hpp>
+#include <xmcu/non_constructible.hpp>
 
 namespace xmcu::soc::st::arm::m4::wb::rm0434::system {
 template<typename MCU_t> class pwr : private xmcu::non_constructible
@@ -60,6 +60,11 @@ public:
                           Method a_method,
                           Sleeponexit a_sleeponexit,
                           peripherals::internal_flash::Latency a_desired_flash_latency) = delete;
+    };
+    struct backup_domain : private xmcu::non_constructible
+    {
+        static bool enable(xmcu::Milliseconds timeout_a);
+        static bool disable(xmcu::Milliseconds timeout_a);
     };
 
     static void set_voltage_scaling(Voltage_scaling a_scaling);
