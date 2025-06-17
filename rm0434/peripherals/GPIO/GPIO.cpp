@@ -209,6 +209,58 @@ GPIO::Speed GPIO::Out::Pin::get_speed() const
         bit::flag::get(cast_to_registers(this->p_port)->ospeedr, ll::gpio::OSPEEDR::mask << this->id) >> this->id);
 }
 
+void GPIO::Out::Bus::set_value(std::uint32_t a_value)
+{
+    hkm_assert(nullptr != this->p_port && 0xFFu != this->id_start && 0xFFu != this->id_end);
+
+    const std::uint32_t bus_width = 1 + this->id_end - this->id_start;
+    std::uint32_t mask_from_lower_bit = (1 << bus_width) - 1;
+
+    hkm_assert(0 == (mask_from_lower_bit & a_value));
+    std::uint32_t mask = mask_from_lower_bit << this->id_start;
+
+    std::uint32_t sr_val = mask << 16 | a_value << this->id_start;
+    this->p_port->p_registers->bsrr = static_cast<ll::gpio::BSRR::Data>(sr_val);
+}
+
+// TODO: parallel write to configuration registers
+
+void GPIO::Out::Bus::set_type(Type a_type)
+{
+    hkm_assert(nullptr != this->p_port && 0xFFu != this->id_start && 0xFFu != this->id_end);
+
+    for (std::int32_t id = this->id_start; id <= this->id_end; ++id)
+    {
+        bit::flag::set(&(this->p_port->p_registers->otyper),
+                       ll::gpio::OTYPER::mask << id,
+                       static_cast<ll::gpio::OTYPER::Flag>(a_type) << id);
+    }
+}
+
+void GPIO::Out::Bus::set_pull(Pull a_pull)
+{
+    hkm_assert(nullptr != this->p_port && 0xFFu != this->id_start && 0xFFu != this->id_end);
+
+    for (std::int32_t id = this->id_start; id <= this->id_end; ++id)
+    {
+        bit::flag::set(&(this->p_port->p_registers->pupdr),
+                       ll::gpio::PUPDR::mask << (id * 2u),
+                       static_cast<ll::gpio::PUPDR::Flag>(a_pull) << (id * 2));
+    }
+}
+
+void GPIO::Out::Bus::set_speed(Speed a_speed)
+{
+    hkm_assert(nullptr != this->p_port && 0xFFu != this->id_start && 0xFFu != this->id_end);
+
+    for (std::int32_t id = this->id_start; id <= this->id_end; ++id)
+    {
+        bit::flag::set(&(this->p_port->p_registers->ospeedr),
+                       ll::gpio::OSPEEDR::mask << id,
+                       static_cast<ll::gpio::OSPEEDR::Flag>(a_speed) << id);
+    }
+}
+
 void GPIO::Analog::Pin::set_pull(Pull a_pull)
 {
     hkm_assert(nullptr != this->p_port && 0xFFu != this->id);
