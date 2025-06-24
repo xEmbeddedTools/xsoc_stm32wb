@@ -20,8 +20,8 @@
 #include <rm0434/peripherals/GPIO/gpio_ll.hpp>
 #include <rm0434/rcc.hpp>
 #include <rm0434/system/mcu/mcu.hpp>
-#include <soc/st/arm/IRQ_config.hpp>
 #include <soc/peripheral.hpp>
+#include <soc/st/arm/IRQ_config.hpp>
 #include <xmcu/Limited.hpp>
 #include <xmcu/Non_copyable.hpp>
 #include <xmcu/bit.hpp>
@@ -128,6 +128,33 @@ public:
         private:
             GPIO* p_port;
             std::uint32_t id;
+
+            friend Out;
+        };
+        class Bus : private Non_copyable
+        {
+        public:
+            Bus()
+                : p_port(nullptr)
+                , id_start(0xFFu)
+                , id_end(0xFF)
+            {
+            }
+
+            void set_value(std::uint32_t a_value);
+
+            void set_type(Type a_type);
+            void set_pull(Pull a_pull);
+            void set_speed(Speed a_speed);
+
+            GPIO* get_port() const
+            {
+                return this->p_port;
+            }
+
+        private:
+            GPIO* p_port;
+            std::uint8_t id_start, id_end;
 
             friend Out;
         };
