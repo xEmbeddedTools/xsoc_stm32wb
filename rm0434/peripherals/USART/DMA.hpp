@@ -135,6 +135,7 @@ public:
                        DMA<>::Mode a_mode,
                        Not_null<volatile const void*> a_p_buffer,
                        std::uint16_t a_buffer_size_in_words);
+            void restart(std::uint16_t a_buffer_size_in_words);
             void stop();
 
         private:

@@ -260,6 +260,12 @@ void DMA<USART>::Receiver::Interrupt::start(DMA<>::Priority a_priority,
               a_p_buffer,
               a_buffer_size_in_words);
 }
+void DMA<USART>::Transmitter::Interrupt::restart(std::uint16_t a_buffer_size_in_words)
+{
+    this->stop();
+    this->p_DMA->p_tx_channel_registers->CNDTR = a_buffer_size_in_words;
+    bit::flag::set(&(this->p_DMA->p_tx_channel_registers->CCR), DMA_CCR_EN);
+}
 void DMA<USART>::Receiver::Interrupt::stop()
 {
     bit::flag::clear(&(this->p_DMA->p_rx_channel_registers->CCR), DMA_CCR_EN);
