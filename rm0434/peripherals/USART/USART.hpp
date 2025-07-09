@@ -534,12 +534,8 @@ inline void peripherals::GPIO::Alternate_function::enable<peripherals::USART, 1>
                                                                                  Pin* a_p_pin)
 {
 #if defined(STM32WB35xx) || defined(STM32WB55xx)
-    hkm_assert((0 == this->p_port->idx && (9 == a_id || 10 == a_id)) || // PORTA
-               (1 == this->p_port->idx && (6 == a_id || 7 == a_id)) ||  // PORTB
-               /* DE (RTS pin) */                                       //
-               (0u == this->p_port->idx && 12u == a_id) ||              // PORTA
-               (1u == this->p_port->idx && 3u == a_id)                  // PORTB
-    );
+    hkm_assert((0 == this->p_port->idx && (9 == a_id || 10 == a_id || 12u == a_id)) || // PORTA
+               (1 == this->p_port->idx && (6 == a_id || 7 == a_id || 3u == a_id)));    // PORTB
 #endif
 
     this->enable(a_id, a_config, 0x7u, a_p_pin);
