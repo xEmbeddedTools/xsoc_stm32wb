@@ -535,7 +535,7 @@ void GPIO::Interrupt::attach(const GPIO& a_port, std::uint32_t a_pin, Trigger_fl
     volatile std::uint32_t* p_register = &(SYSCFG->EXTICR[a_pin / 4u]);
     std::uint32_t pos = ((static_cast<std::uint32_t>(a_pin) % 4u) * 4u);
 
-#if defined(HKM_ASSERT_ENABLED)
+#if defined(XMCU_ASSERT_ENABLED)
     const bool f = bit::flag::is(*p_register, (a_port.idx) << pos);
     hkm_assert((0u == a_port.idx && true == f) || (0u != a_port.idx && false == f));
     hkm_assert((0u == this->idx && 0u == a_pin) || (1u == this->idx && 1u == a_pin) ||
