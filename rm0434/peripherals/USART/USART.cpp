@@ -210,7 +210,7 @@ void enable(ll::usart::Registers* a_p_registers,
     a_p_registers->cr3 = ll::usart::CR3::none;
     a_p_registers->presc = ll::usart::PRESC::none;
 
-#if defined(HKM_ASSERT_ENABLED)
+#if defined(XMCU_ASSERT_ENABLED)
     constexpr std::uint32_t BRR_min = 0x300u;
     constexpr std::uint32_t BRR_max = 0xFFFFFu;
 
@@ -224,7 +224,7 @@ void enable(ll::usart::Registers* a_p_registers,
     a_p_registers->brr = brr;
 #endif
 
-#if !defined(HKM_ASSERT_ENABLED)
+#if !defined(XMCU_ASSERT_ENABLED)
     a_p_registers->brr =
         ((a_clock_config.freq_Hz / clock_prescaler_lut[static_cast<std::uint32_t>(a_clock_config.prescaler)]) * 256u +
          (a_transceiving_config.baud_rate / 2u)) /
@@ -287,7 +287,7 @@ void enable(ll::usart::Registers* a_p_registers,
             const USART::Frame_format& a_frame_format,
             USART::Low_power_wakeup_method a_low_power_wakeup)
 {
-#if defined(HKM_ASSERT_ENABLED)
+#if defined(XMCU_ASSERT_ENABLED)
     constexpr std::uint32_t BRR_min = 0x10u;
     constexpr std::uint32_t BRR_max = 0xFFFFu;
 #endif
@@ -300,7 +300,7 @@ void enable(ll::usart::Registers* a_p_registers,
     switch (a_transceiving_config.oversampling)
     {
         case USART::Transceiving_config::Oversampling::_16: {
-#if defined(HKM_ASSERT_ENABLED)
+#if defined(XMCU_ASSERT_ENABLED)
             std::uint32_t brr =
                 (a_clock_config.freq_Hz / clock_prescaler_lut[static_cast<std::uint32_t>(a_clock_config.prescaler)]) /
                 a_transceiving_config.baud_rate;
@@ -309,7 +309,7 @@ void enable(ll::usart::Registers* a_p_registers,
             a_p_registers->brr = brr;
 #endif
 
-#if !defined(HKM_ASSERT_ENABLED)
+#if !defined(XMCU_ASSERT_ENABLED)
             a_p_registers->brr =
                 (a_clock_config.freq_Hz / clock_prescaler_lut[static_cast<std::uint32_t>(a_clock_config.prescaler)]) /
                 a_transceiving_config.baud_rate;
@@ -320,7 +320,7 @@ void enable(ll::usart::Registers* a_p_registers,
         break;
 
         case USART::Transceiving_config::Oversampling::_8: {
-#if defined(HKM_ASSERT_ENABLED)
+#if defined(XMCU_ASSERT_ENABLED)
             const std::uint32_t usartdiv =
                 (2 *
                  (a_clock_config.freq_Hz / clock_prescaler_lut[static_cast<std::uint32_t>(a_clock_config.prescaler)])) /
@@ -331,7 +331,7 @@ void enable(ll::usart::Registers* a_p_registers,
             a_p_registers->brr = brr;
 #endif
 
-#if !defined(HKM_ASSERT_ENABLED)
+#if !defined(XMCU_ASSERT_ENABLED)
             const std::uint32_t usartdiv =
                 (2 *
                  (a_clock_config.freq_Hz / clock_prescaler_lut[static_cast<std::uint32_t>(a_clock_config.prescaler)])) /
