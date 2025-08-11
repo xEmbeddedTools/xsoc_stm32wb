@@ -94,6 +94,12 @@ public:
                  DBGMCU->IDCODE };
     }
 
+    static std::uint16_t get_verfint_reference()
+    {
+        const std::uint16_t value = *(reinterpret_cast<const std::uint16_t*>(0x1FFF75AA));
+        return value;
+    }
+
     static void set_vector_table_address(std::uint32_t a_address)
     {
         SCB->VTOR = a_address;
