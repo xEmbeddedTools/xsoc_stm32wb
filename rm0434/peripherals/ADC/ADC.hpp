@@ -53,10 +53,10 @@ public:
 
     struct Calibration_data
     {
-        std::uint16_t ts_cal_1 = 0u;
-        std::uint16_t ts_cal_2 = 0u;
-        std::uint16_t vrefint = 0u;
-        std::uint16_t vrefint_calibration_voltage_mV = 0u;
+        const std::uint16_t ts_cal_1 = 0u;
+        const std::uint16_t ts_cal_2 = 0u;
+        const std::uint16_t vrefint = 0u;
+        const std::uint16_t vrefint_calibration_voltage_mV = 0u;
     };
     struct Channel
     {
