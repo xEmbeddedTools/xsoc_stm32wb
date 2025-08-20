@@ -19,8 +19,8 @@
 #include <rm0434/clocks/sources/pll.hpp>
 #include <rm0434/rcc.hpp>
 #include <rm0434/system/mcu/mcu.hpp>
-#include <soc/st/arm/IRQ_config.hpp>
 #include <soc/peripheral.hpp>
+#include <soc/st/arm/IRQ_config.hpp>
 #include <xmcu/Duration.hpp>
 #include <xmcu/Non_copyable.hpp>
 #include <xmcu/Not_null.hpp>
@@ -53,9 +53,10 @@ public:
 
     struct Calibration_data
     {
-        std::uint16_t temperature_sensor_data_1 = 0u;
-        std::uint16_t temperature_sensor_data_2 = 0u;
-        std::uint16_t internal_voltage_reference = 0u;
+        const std::uint16_t ts_cal_1 = 0u;
+        const std::uint16_t ts_cal_2 = 0u;
+        const std::uint16_t vrefint = 0u;
+        const std::uint16_t vrefint_calibration_voltage_mV = 0u;
     };
     struct Channel
     {
@@ -189,9 +190,10 @@ public:
 
     constexpr Calibration_data get_calibration_data() const
     {
-        return { *(reinterpret_cast<const std::uint16_t*>(0x1FFF75A8)),
-                 *(reinterpret_cast<const std::uint16_t*>(0x1FFF75CA)),
-                 *(reinterpret_cast<const std::uint16_t*>(0x1FFF75AA)) };
+        return Calibration_data { .ts_cal_1 = *(reinterpret_cast<const std::uint16_t*>(0x1FFF75A8)),
+                                  .ts_cal_2 = *(reinterpret_cast<const std::uint16_t*>(0x1FFF75CA)),
+                                  .vrefint = *(reinterpret_cast<const std::uint16_t*>(0x1FFF75AA)),
+                                  .vrefint_calibration_voltage_mV = 3600u };
     }
 
     bool is_enabled() const

@@ -45,9 +45,12 @@ public:
         };
 
         static bool set(Level a_level);
-        static Level get();
+
+        static Level get_level();
+        static std::uint16_t get_mV();
     };
 };
+
 } // namespace xmcu::soc::st::arm::m4::wb::rm0434::peripherals
 
 namespace xmcu::soc {

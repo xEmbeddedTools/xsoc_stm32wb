@@ -14,8 +14,8 @@
 #include <rm0434/system/hsem/hsem.hpp>
 #include <rm0434/utils/tick_counter.hpp>
 #include <rm0434/utils/wait_until.hpp>
-#include <soc/st/arm/m4/nvic.hpp>
 #include <soc/Scoped_guard.hpp>
+#include <soc/st/arm/m4/nvic.hpp>
 #include <xmcu/bit.hpp>
 
 namespace xmcu::soc::st::arm::m4::wb::rm0434::peripherals {
@@ -112,11 +112,36 @@ bool option_bytes::BOR::set(Level a_level)
     return false;
 }
 
-option_bytes::BOR::Level option_bytes::BOR::get()
+option_bytes::BOR::Level option_bytes::BOR::get_level()
 {
     Scoped_guard<hsem::_1_step> sem2_guard(0x2u);
     Scoped_guard<internal_flash::unlocker> flash_guard;
 
     return static_cast<Level>(bit::flag::get(FLASH->OPTR, FLASH_OPTR_BOR_LEV));
+}
+
+std::uint16_t option_bytes::BOR::get_mV()
+{
+    const auto level = get_level();
+
+    switch (level)
+    {
+        case Level::_1_7V:
+            return 1700u;
+
+        case Level::_2_0V:
+            return 2000u;
+
+        case Level::_2_2V:
+            return 2200u;
+
+        case Level::_2_5V:
+            return 2500u;
+
+        case Level::_2_8V:
+            return 2800u;
+    }
+
+    return 0u;
 }
 } // namespace xmcu::soc::st::arm::m4::wb::rm0434::peripherals
