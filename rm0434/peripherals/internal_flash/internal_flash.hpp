@@ -12,8 +12,8 @@
 #include <stm32wbxx.h>
 
 // xmcu
-#include <soc/st/arm/m4/nvic.hpp>
 #include <soc/Scoped_guard.hpp>
+#include <soc/st/arm/m4/nvic.hpp>
 #include <xmcu/Duration.hpp>
 #include <xmcu/Limited.hpp>
 #include <xmcu/Not_null.hpp>
@@ -32,6 +32,8 @@ public:
     {
         static constexpr std::size_t start = FLASH_BASE;
         static constexpr std::size_t page_size_in_bytes = 4096u;
+        static constexpr std::size_t start_otp = OTP_AREA_BASE;
+        static constexpr std::size_t size_otp = 1024u;
 
 #if defined(XMCU_SOC_MODEL_STM32WB55CG) || defined(XMCU_SOC_MODEL_STM32WB55RG) || defined(XMCU_SOC_MODEL_STM32WB55VG)
         static constexpr std::size_t pages_count = 256u;
@@ -120,6 +122,14 @@ public:
                             std::size_t a_size_in_double_words,
                             Milliseconds a_timeout);
 
+        static Result write_otp(Limited<std::uint32_t, s::start_otp, s::start_otp + s::size_otp> a_address,
+                                Not_null<const Word*> a_p_data,
+                                std::size_t a_size_in_double_words);
+        static Result write_otp(Limited<std::uint32_t, s::start_otp, s::start_otp + s::size_otp> a_address,
+                                Not_null<const Word*> a_p_data,
+                                std::size_t a_size_in_double_words,
+                                Milliseconds a_timeout);
+
         static Result read(Limited<std::uint32_t, s::start, s::start + s::size_in_bytes> a_address,
                            Not_null<void*> a_p_data,
                            Limited<std::size_t, 1, s::page_size_in_bytes> a_size_in_bytes);
@@ -136,6 +146,15 @@ public:
 
         static Result erase_bank(Bank_id a_id, Function_lock a_lock_function);
         static Result erase_bank(Bank_id a_id, Function_lock a_lock_function, Milliseconds a_timeout);
+
+    private:
+        static Result write_raw(std::uint32_t a_address, // this comment enforce args in separate lines
+                                Not_null<const Word*> a_p_data,
+                                std::size_t a_size_in_double_words);
+        static Result write_raw(std::uint32_t a_address,
+                                Not_null<const Word*> a_p_data,
+                                std::size_t a_size_in_double_words,
+                                Milliseconds a_timeout);
     };
 
     static void set_latency(Latency a_latency);
