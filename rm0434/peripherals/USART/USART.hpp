@@ -406,7 +406,7 @@ public:
 
     bool is_mute_mode_requested() const
     {
-        return bit::is(this->p_registers->rqr, ll::usart::RQR::mmrq);
+        return bit::flag::is(this->p_registers->rqr, ll::usart::RQR::mmrq);
     }
 
     operator ll::usart::Registers*()
