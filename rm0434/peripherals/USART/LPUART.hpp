@@ -302,6 +302,11 @@ public:
         return utils::wait_until::all_bits_are_set(this->p_registers->isr, ll::usart::ISR::rwu, a_timeout);
     }
 
+    bool is_mute_mode_requested() const
+    {
+        return bit::is(this->p_registers->rqr, ll::usart::RQR::mmrq);
+    }
+
     operator ll::usart::Registers*()
     {
         return this->p_registers;
