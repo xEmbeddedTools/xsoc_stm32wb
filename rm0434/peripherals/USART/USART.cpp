@@ -256,7 +256,6 @@ void enable(ll::usart::Registers* a_p_registers,
                         << ll::usart::CR2::add) |
                            ll::usart::CR2::addm7);
         bit::flag::set(&(a_p_registers->cr1), ll::usart::CR1::mme | ll::usart::CR1::wake);
-        a_p_registers->rqr = ll::usart::RQR::mmrq;
     }
     else if (LPUART::Transceiving_config::Mute_method::idle_line == a_transceiving_config.mute_method)
     {
@@ -369,7 +368,6 @@ void enable(ll::usart::Registers* a_p_registers,
                         << ll::usart::CR2::add) |
                            ll::usart::CR2::addm7);
         bit::flag::set(&(a_p_registers->cr1), ll::usart::CR1::mme | ll::usart::CR1::wake);
-        a_p_registers->rqr = ll::usart::RQR::mmrq;
     }
     else if (USART::Transceiving_config::Mute_method::idle_line == a_transceiving_config.mute_method)
     {

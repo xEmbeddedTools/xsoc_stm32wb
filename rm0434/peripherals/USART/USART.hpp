@@ -22,8 +22,8 @@
 #include <rm0434/system/mcu/mcu.hpp>
 #include <rm0434/utils/tick_counter.hpp>
 #include <rm0434/utils/wait_until.hpp>
-#include <soc/st/arm/IRQ_config.hpp>
 #include <soc/peripheral.hpp>
+#include <soc/st/arm/IRQ_config.hpp>
 #include <xmcu/Duration.hpp>
 #include <xmcu/Non_copyable.hpp>
 #include <xmcu/Not_null.hpp>
@@ -396,6 +396,12 @@ public:
     Frame_format get_frame_format() const
     {
         return {};
+    }
+
+    bool request_mute_mode(Milliseconds a_timeout) const
+    {
+        this->p_registers->rqr = ll::usart::RQR::mmrq;
+        return utils::wait_until::all_bits_are_set(this->p_registers->isr, ll::usart::ISR::rwu, a_timeout);
     }
 
     operator ll::usart::Registers*()
