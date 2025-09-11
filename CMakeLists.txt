@@ -16,7 +16,7 @@ if (XMCU_SOC_MODEL STREQUAL "XMCU_SOC_MODEL_STM32WB35CEU6A")
             "${CMAKE_CURRENT_LIST_DIR}/CMSIS/Device/ST/STM32WBxx/Source/Templates/system_stm32wbxx.c")
     set(XMCU_LD_SCRIPT "${CMAKE_CURRENT_LIST_DIR}/CMSIS/Device/ST/STM32WBxx/Source/Templates/gcc/linker/stm32wb35xx_flash_cm4.ld")
     add_library(XMCU_SOC OBJECT ${XMCU_SOC_SRC})
-    add_compile_definitions("XMCU_SOC" "XMCU_SOC_MODEL_STM32WB35CEU6A" "STM32WB35xx")
+    add_compile_definitions("XMCU_SOC_MODEL_STM32WB35CEU6A" "STM32WB35xx")
 endif()
 
 set(XMCU_COMPILE_FLAGS ${XMCU_COMPILE_FLAGS} -mcpu=cortex-m4 -mthumb)
