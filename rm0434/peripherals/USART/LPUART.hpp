@@ -425,6 +425,7 @@ inline void peripherals::GPIO::Alternate_function::enable<peripherals::LPUART, 1
 {
 #if defined(STM32WB35xx)
     hkm_assert((0u == this->p_port->idx && (2u == a_id || 3u == a_id || 12u == a_id)) ||               // PORTA
+                // TODO: I'm not sure about pin 10 and pin 11 according to DS11929 pin 10 and 11 is not available
                (1u == this->p_port->idx && (5u == a_id || 10u == a_id || 11u == a_id || 1u == a_id))); // PORTB
 #elif defined(STM32WB55xx)
     hkm_assert(

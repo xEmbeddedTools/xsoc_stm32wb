@@ -33,7 +33,7 @@
 
 // TODO: use with xmcu_assert in gpio pin initialization to check if pin can actually be used
 #define BV(x) (1 << (x))
-#if defined(XMCU_SOC_MODEL_STM32WB35CEU6A)
+#if defined(XMCU_SOC_MODEL_STM32WB35CEU6A) || defined(XMCU_SOC_MODEL_STM32WB55CGU6)
 #define GPIOA_PIN_MASK                                                                                          \
     (BV(0) | BV(1) | BV(2) | BV(3) | BV(4) | BV(5) | BV(6) | BV(7) | BV(8) | BV(9) | BV(10) | BV(11) | BV(12) | \
      BV(13) | BV(14) | BV(15))

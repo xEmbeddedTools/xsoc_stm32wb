@@ -15,7 +15,7 @@
 #include <xmcu/non_constructible.hpp>
 
 namespace xmcu::soc::st::arm::m4::wb::rm0434::peripherals::ll {
-#if defined(XMCU_SOC_MODEL_STM32WB35CEU6A)
+#if defined(XMCU_SOC_MODEL_STM32WB35CEU6A) || defined(XMCU_SOC_MODEL_STM32WB55CGU6)
 struct usart_base : private non_constructible
 {
     enum class _1 : std::uint32_t;
