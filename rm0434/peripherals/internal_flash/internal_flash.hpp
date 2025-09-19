@@ -148,9 +148,8 @@ public:
         static Result erase_bank(Bank_id a_id, Function_lock a_lock_function, Milliseconds a_timeout);
 
     private:
-        static Result write_raw(std::uint32_t a_address, // this comment enforce args in separate lines
-                                Not_null<const Word*> a_p_data,
-                                std::size_t a_size_in_double_words);
+        static Result
+        write_raw(std::uint32_t a_address, Not_null<const Word*> a_p_data, std::size_t a_size_in_double_words);
         static Result write_raw(std::uint32_t a_address,
                                 Not_null<const Word*> a_p_data,
                                 std::size_t a_size_in_double_words,
