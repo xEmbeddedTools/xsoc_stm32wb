@@ -154,9 +154,42 @@ bool internal_flash::set_cache_mode(Cache_mode_flag a_cache_mode, Milliseconds a
 }
 
 internal_flash::polling::Result
+internal_flash::polling::write_otp(Limited<std::uint32_t, s::start_otp, s::start_otp + s::size_otp> a_address,
+                                   Not_null<const Word*> a_p_data,
+                                   std::size_t a_size_in_double_words)
+{
+    return write_raw(a_address.get(), a_p_data, a_size_in_double_words);
+}
+
+internal_flash::polling::Result
+internal_flash::polling::write_otp(Limited<std::uint32_t, s::start_otp, s::start_otp + s::size_otp> a_address,
+                                   Not_null<const Word*> a_p_data,
+                                   std::size_t a_size_in_double_words,
+                                   Milliseconds a_timeout)
+{
+    return write_raw(a_address.get(), a_p_data, a_size_in_double_words, a_timeout);
+}
+
+internal_flash::polling::Result
 internal_flash::polling::write(Limited<std::uint32_t, s::start, s::start + s::size_in_bytes> a_address,
                                Not_null<const Word*> a_p_data,
                                std::size_t a_size_in_double_words)
+{
+    return write_raw(a_address.get(), a_p_data, a_size_in_double_words);
+}
+
+internal_flash::polling::Result
+internal_flash::polling::write(Limited<std::uint32_t, s::start, s::start + s::size_in_bytes> a_address,
+                               Not_null<const Word*> a_p_data,
+                               std::size_t a_size_in_double_words,
+                               Milliseconds a_timeout)
+{
+    return write_raw(a_address.get(), a_p_data, a_size_in_double_words, a_timeout);
+}
+
+internal_flash::polling::Result internal_flash::polling::write_raw(std::uint32_t a_address,
+                                                                   Not_null<const Word*> a_p_data,
+                                                                   std::size_t a_size_in_double_words)
 {
     hkm_assert(a_size_in_double_words > 0);
 
@@ -180,7 +213,7 @@ internal_flash::polling::write(Limited<std::uint32_t, s::start, s::start + s::si
 
             bit::flag::set(&(FLASH->CR), FLASH_CR_PG);
 
-            volatile std::uint32_t* p_address = reinterpret_cast<volatile std::uint32_t*>(a_address.get());
+            volatile std::uint32_t* p_address = reinterpret_cast<volatile std::uint32_t*>(a_address);
 
             *(p_address + i * 2u + 0u) = static_cast<std::uint32_t>(a_p_data[i] >> 0x00u);
             __ISB();
@@ -204,11 +237,10 @@ internal_flash::polling::write(Limited<std::uint32_t, s::start, s::start + s::si
     return { get_status_flag_from_FLASH_SR(), a_size_in_double_words };
 }
 
-internal_flash::polling::Result
-internal_flash::polling::write(Limited<std::uint32_t, s::start, s::start + s::size_in_bytes> a_address,
-                               Not_null<const Word*> a_p_data,
-                               std::size_t a_size_in_double_words,
-                               Milliseconds a_timeout)
+internal_flash::polling::Result internal_flash::polling::write_raw(std::uint32_t a_address,
+                                                                   Not_null<const Word*> a_p_data,
+                                                                   std::size_t a_size_in_double_words,
+                                                                   Milliseconds a_timeout)
 {
     hkm_assert(a_size_in_double_words > 0);
 
@@ -244,7 +276,7 @@ internal_flash::polling::write(Limited<std::uint32_t, s::start, s::start + s::si
 
                         bit::flag::set(&(FLASH->CR), FLASH_CR_PG);
 
-                        volatile std::uint32_t* p_address = reinterpret_cast<volatile std::uint32_t*>(a_address.get());
+                        volatile std::uint32_t* p_address = reinterpret_cast<volatile std::uint32_t*>(a_address);
 
                         *(p_address + i * 2u + 0u) = static_cast<std::uint32_t>(a_p_data[i] >> 0x00u);
                         __ISB();
