@@ -29,7 +29,6 @@ file(GLOB_RECURSE XMCU_SOC_SRC
     "${STARTUP_FILE}"
     "${CMAKE_CURRENT_LIST_DIR}/CMSIS/Device/ST/STM32WBxx/Source/Templates/system_stm32wbxx.c")
 
-set(XMCU_LD_SCRIPT "${SOC_LINKER_SCRIPT}")
 add_library(XMCU_SOC OBJECT ${XMCU_SOC_SRC})
 
 add_compile_definitions("${XMCU_SOC_MODEL}" "${SOC_MODEL_FAMILY}")
