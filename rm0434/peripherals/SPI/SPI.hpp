@@ -112,8 +112,9 @@ inline void peripherals::GPIO::Alternate_function::enable<peripherals::SPI, 1>(L
 {
     // Check if GPIO is eligible for RX/TX pin
     std::uint8_t alternate_function_index;
-#if defined(STM32WB35xx)
-    // DS11929 table 19
+#if defined(XMCU_SOC_MODEL_STM32WB35CEU6A) || defined(XMCU_SOC_MODEL_STM32WB55CGU6)
+    // DS11929 table 19 - for STM32WB35CEU6A
+    // DS11929 table 18 - for STM32WB55CGU6
     if ((0u == this->p_port->idx && (1u == a_id || 4u == a_id || 5u == a_id || 6u == a_id || 7u == a_id ||
                                      11u == a_id || 12u == a_id || 15u == a_id)) ||
         (1u == this->p_port->idx && (2u == a_id || 3u == a_id || 4u == a_id || 5u == a_id)))

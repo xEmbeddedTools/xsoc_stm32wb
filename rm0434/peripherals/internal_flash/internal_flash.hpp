@@ -35,7 +35,8 @@ public:
         static constexpr std::size_t start_otp = OTP_AREA_BASE;
         static constexpr std::size_t size_otp = 1024u;
 
-#if defined(XMCU_SOC_MODEL_STM32WB55CG) || defined(XMCU_SOC_MODEL_STM32WB55RG) || defined(XMCU_SOC_MODEL_STM32WB55VG)
+#if defined(XMCU_SOC_MODEL_STM32WB55CG) || defined(XMCU_SOC_MODEL_STM32WB55RG) || \
+    defined(XMCU_SOC_MODEL_STM32WB55VG) || defined(XMCU_SOC_MODEL_STM32WB55CGU6)
         static constexpr std::size_t pages_count = 256u;
 #elif defined(XMCU_SOC_MODEL_STM32WB55CE) || defined(XMCU_SOC_MODEL_STM32WB55RE) || \
     defined(XMCU_SOC_MODEL_STM32WB55VE) || defined(XMCU_SOC_MODEL_STM32WB35CEU6A)
