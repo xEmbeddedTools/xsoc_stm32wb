@@ -53,6 +53,11 @@ public:
      */
     static void set_clock(Milliseconds a_world_millis);
 
+    /*
+    * @brief Invalidates the RTC time.
+    */
+    static void unset_clock();
+
     /**
      * @brief Checks if RTC is set up.
      *

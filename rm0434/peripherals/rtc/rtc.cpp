@@ -145,6 +145,32 @@ void rtc::set_clock(Milliseconds a_world_millis)
     wait_until::any_bit_is_set(RTC->ISR, RTC_ISR_INITS);
 }
 
+void rtc::unset_clock()
+{
+    Scoped_guard<rtc> unlocker;
+
+    // Enter calendar initialization mode
+    bit::flag::set(&RTC->ISR, RTC_ISR_INIT);
+    wait_until::any_bit_is_set(RTC->ISR, RTC_ISR_INITF);
+
+    // Set prescalers to generate 1Hz
+    bit::flag::set(&RTC->PRER, RTC_PRER_PREDIV_A_Msk, (128 - 1) << RTC_PRER_PREDIV_A_Pos);
+    bit::flag::set(&RTC->PRER, RTC_PRER_PREDIV_S_Msk, (256 - 1) << RTC_PRER_PREDIV_S_Pos);
+
+    // Configure 24-hour format
+    bit::flag::clear(&RTC->CR, RTC_CR_FMT);
+
+    // Set time/date
+
+    bit::flag::clear(&RTC->TR, RTC_TR_PM);
+    RTC->TR = 0u;
+    RTC->DR = 0u;
+
+    // Exit init mode
+    bit::flag::clear(&RTC->ISR, RTC_ISR_INIT);
+    wait_until::any_bit_is_cleared(RTC->ISR, RTC_ISR_INITS);
+}
+
 bool rtc::is_clock_set()
 {
     // Checks if year is 00
