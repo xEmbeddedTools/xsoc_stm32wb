@@ -145,6 +145,22 @@ void rtc::set_clock(Milliseconds a_world_millis)
     wait_until::any_bit_is_set(RTC->ISR, RTC_ISR_INITS);
 }
 
+void rtc::unset_clock()
+{
+    Scoped_guard<rtc> unlocker;
+
+    // Enter calendar initialization mode
+    bit::flag::set(&RTC->ISR, RTC_ISR_INIT);
+    wait_until::any_bit_is_set(RTC->ISR, RTC_ISR_INITF);
+
+    RTC->TR = 0u;
+    RTC->DR = 0u;
+
+    // Exit init mode
+    bit::flag::clear(&RTC->ISR, RTC_ISR_INIT);
+    wait_until::any_bit_is_cleared(RTC->ISR, RTC_ISR_INITS);
+}
+
 bool rtc::is_clock_set()
 {
     // Checks if year is 00
