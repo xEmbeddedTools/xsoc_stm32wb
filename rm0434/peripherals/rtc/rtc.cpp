@@ -153,7 +153,6 @@ void rtc::unset_clock()
     bit::flag::set(&RTC->ISR, RTC_ISR_INIT);
     wait_until::any_bit_is_set(RTC->ISR, RTC_ISR_INITF);
 
-    bit::flag::clear(&RTC->TR, RTC_TR_PM);
     RTC->TR = 0u;
     RTC->DR = 0u;
 
