@@ -31,8 +31,8 @@ else()
     message(FATAL_ERROR "Unsupported XMCU_SOC_MODEL: ${XMCU_SOC_MODEL}")
 endif()
 
-target_compile_features(XMCU_SOC PUBLIC cxx_std_23)
-target_compile_features(XMCU_SOC PUBLIC c_std_11)
+target_compile_features(XMCU_SOC PRIVATE cxx_std_23)
+target_compile_features(XMCU_SOC PRIVATE c_std_11)
 target_include_directories(XMCU_SOC PUBLIC
                                     ${XMCU_PATH}
                                     ${CMAKE_CURRENT_LIST_DIR}
