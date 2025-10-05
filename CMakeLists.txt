@@ -39,15 +39,8 @@ target_include_directories(XMCU_SOC PUBLIC
                                     "${CMAKE_CURRENT_LIST_DIR}/CMSIS/Device/ST/STM32WBxx/Include/"
                                     "${XMCU_PATH}/soc/st/arm/CMSIS/Include")
 
-target_compile_options(XMCU_SOC PUBLIC $<$<COMPILE_LANGUAGE:CXX>:-mcpu=cortex-m4 -mthumb>
-                                       $<$<COMPILE_LANGUAGE:C>:-mcpu=cortex-m4 -mthumb>
-                                       $<$<COMPILE_LANGUAGE:ASM>:-mcpu=cortex-m4 -mthumb>)
-
 if (${XMCU_NOSTDLIB} STREQUAL "ON")
-    message("XMCU: no stdlib")
-    target_compile_options(XMCU_SOC PUBLIC $<$<COMPILE_LANGUAGE:CXX>:-nostdlib -nostartfiles>
-                                           $<$<COMPILE_LANGUAGE:C>:-nostdlib -nostartfiles>
-                                           $<$<COMPILE_LANGUAGE:ASM>:-nostdlib -nostartfiles>)
+    target_compile_definitions(XMCU_SOC PUBLIC XMCU_NOSTDLIB)
 endif()
 
 include_directories(
