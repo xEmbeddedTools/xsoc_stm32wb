@@ -3,8 +3,6 @@
 # Licensed under the Apache License, Version 2.0. See LICENSE file in the project root for details.
 #
 
-cmake_minimum_required(VERSION 3.19.0)
-
 if (XMCU_SOC_MODEL STREQUAL "XMCU_SOC_MODEL_STM32WB35CEU6A")
     file(GLOB_RECURSE XMCU_SOC_SRC
                       "${CMAKE_CURRENT_LIST_DIR}/rm0434/*.cpp"
