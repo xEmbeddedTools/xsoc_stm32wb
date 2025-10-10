@@ -13,8 +13,8 @@
 
 // xmcu
 #include <rm0434/rcc.hpp>
-#include <xmcu/Limited.hpp>
 #include <xmcu/hal/IRQ_config.hpp>
+#include <xmcu/Limited.hpp>
 #include <xmcu/non_constructible.hpp>
 
 namespace xmcu::soc::st::arm::m4::wb::rm0434::peripherals {
@@ -31,22 +31,10 @@ public:
     static void feed();
     static void feed(window_t reload);
     static bool is_active();
-};
 
-class wwdg_repetable : private wwdg
-{
-public:
-    static constexpr uint32_t wwdg_mid_step = 1u; // if we like to make reload value comparable to seconds
-    static constexpr uint32_t wwdg_mid_reload = 20u;
-
-    static volatile uint32_t wwdg_mid_counter;
-    using wwdg::enable;
+protected:
     static void interrupt_enable(const xmcu::hal::IRQ_config& a_config);
-    static void feed();
-    static void interrupt();
-
-private:
-    static void feed_hw();
+    static void feed_int();
 };
 
 } // namespace xmcu::soc::st::arm::m4::wb::rm0434::peripherals
