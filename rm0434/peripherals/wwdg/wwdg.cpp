@@ -6,7 +6,6 @@
 // this
 #include <rm0434/peripherals/wwdg/wwdg.hpp>
 
-// using namespace xmcu::soc::st::arm::m4::wb::rm0434;
 using namespace xmcu::soc::st::arm::m4::wb::rm0434::peripherals;
 
 void wwdg::enable(wwdg::window_t a_window)
@@ -29,7 +28,6 @@ void wwdg::feed(wwdg::window_t a_reload)
 
 bool wwdg::is_active()
 {
-    // xmcu::bit::is(WWDG->CR, WWDG_CR_WDGA_Pos);
     return xmcu::bit::is_any(WWDG->CR, WWDG_CR_WDGA);
 }
 

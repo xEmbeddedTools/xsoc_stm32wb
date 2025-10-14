@@ -47,7 +47,7 @@ public:
     {
         bit::flag::set(&RCC->APB1ENR1, RCC_APB1ENR1_WWDGEN);
 
-        if (a_enable_in_lp)
+        if (true == a_enable_in_lp)
         {
             bit::flag::set(&RCC->APB1SMENR1, RCC_APB1SMENR1_WWDGSMEN);
         }
