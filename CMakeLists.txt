@@ -45,9 +45,3 @@ if (DEFINED XMCU_NOSTDLIB)
 else()
     message(FATAL_ERROR "XMCU_NOSTDLIB is not set (expected values: ON/OFF)")
 endif()
-
-include_directories(
-    ${XMCU_PATH}
-    ${CMAKE_CURRENT_LIST_DIR}
-    "${XMCU_PATH}/soc/st/arm/CMSIS/Include"
-    "${CMAKE_CURRENT_LIST_DIR}/CMSIS/Device/ST/STM32WBxx/Include")
