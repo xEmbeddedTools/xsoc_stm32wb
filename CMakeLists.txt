@@ -51,4 +51,3 @@ include_directories(
     ${CMAKE_CURRENT_LIST_DIR}
     "${XMCU_PATH}/soc/st/arm/CMSIS/Include"
     "${CMAKE_CURRENT_LIST_DIR}/CMSIS/Device/ST/STM32WBxx/Include")
-
