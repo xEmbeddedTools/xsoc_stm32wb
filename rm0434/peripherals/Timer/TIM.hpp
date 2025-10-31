@@ -20,8 +20,8 @@
 #include <rm0434/peripherals/GPIO/GPIO.hpp>
 #include <rm0434/rcc.hpp>
 #include <rm0434/system/mcu/mcu.hpp>
-#include <soc/st/arm/IRQ_config.hpp>
 #include <soc/peripheral.hpp>
+#include <soc/st/arm/IRQ_config.hpp>
 #include <xmcu/Duration.hpp>
 #include <xmcu/Non_copyable.hpp>
 #include <xmcu/bit.hpp>
@@ -398,6 +398,19 @@ class TIM_ADV
     static constexpr std::uint32_t CH_N = 4;
 
 public:
+#if defined(XMCU_TIM1_PRESENT)
+    enum class _1;
+#endif
+#if defined(XMCU_TIM2_PRESENT)
+    enum class _2;
+#endif
+#if defined(XMCU_TIM16_PRESENT)
+    enum class _16;
+#endif
+#if defined(XMCU_TIM17_PRESENT)
+    enum class _17;
+#endif
+
     using Tick_counter = timer::Tim_advanced;
     using Channel = timer::Channel_PWM<Tick_counter, CH_N>;
 
@@ -440,6 +453,19 @@ private:
 class TIM_G16
 {
 public:
+#if defined(XMCU_TIM1_PRESENT)
+    enum class _1;
+#endif
+#if defined(XMCU_TIM2_PRESENT)
+    enum class _2;
+#endif
+#if defined(XMCU_TIM16_PRESENT)
+    enum class _16;
+#endif
+#if defined(XMCU_TIM17_PRESENT)
+    enum class _17;
+#endif
+
     using Tick_counter = timer::Tim_general16;
     using Channel = timer::Channel_PWM<Tick_counter, 1>;
     Tick_counter tick_counter;
@@ -470,7 +496,8 @@ private:
 
 // RCC - template specialization
 namespace xmcu::soc::st::arm::m4::wb::rm0434 {
-template<> class rcc<peripherals::TIM_ADV, 1u>
+#if defined(XMCU_TIM1_PRESENT)
+template<> class rcc<peripherals::TIM_ADV, peripherals::TIM_ADV::_1>
 {
 public:
     static void enable()
@@ -490,8 +517,9 @@ public:
         return clocks::pclk<2>::get_Tim_frequency_Hz();
     }
 };
-
-template<> class rcc<peripherals::TIM_G16, 16u>
+#endif
+#if defined(XMCU_TIM16_PRESENT)
+template<> class rcc<peripherals::TIM_G16, peripherals::TIM_G16::_16>
 {
 public:
     static void enable()
@@ -511,7 +539,9 @@ public:
         return clocks::pclk<2>::get_Tim_frequency_Hz();
     }
 };
-template<> class rcc<peripherals::TIM_G16, 17u>
+#endif
+#if defined(XMCU_TIM17_PRESENT)
+template<> class rcc<peripherals::TIM_G16, peripherals::TIM_G16::_17>
 {
 public:
     static void enable()
@@ -531,7 +561,7 @@ public:
         return clocks::pclk<2>::get_Tim_frequency_Hz();
     }
 };
-
+#endif
 template<> inline void
 peripherals::GPIO::Alternate_function::enable<peripherals::timer::Channel, 1u>(Limited<std::uint32_t, 0, 15> a_id,
                                                                                const Enable_config& a_config,
@@ -570,7 +600,9 @@ peripherals::GPIO::Alternate_function::enable<peripherals::timer::Channel, 17u>(
 
 // peripheral - template specialization
 namespace xmcu::soc {
-template<> class peripheral<st::arm::m4::wb::rm0434::peripherals::TIM_ADV, 1u>
+#if defined(XMCU_TIM1_PRESENT)
+template<>
+class peripheral<st::arm::m4::wb::rm0434::peripherals::TIM_ADV, st::arm::m4::wb::rm0434::peripherals::TIM_ADV::_1>
 {
     static constexpr st::arm::m4::wb::rm0434::peripherals::timer::Tim_advanced::TIM_irq_t irq {
         .brk = st::arm::m4::wb::rm0434::peripherals::timer::TIM_irq::TIM1_BRK,
@@ -585,8 +617,11 @@ public:
         return { TIM1, irq };
     }
 };
+#endif
 
-template<> class peripheral<st::arm::m4::wb::rm0434::peripherals::TIM_G16, 16u>
+#if defined(XMCU_TIM16_PRESENT)
+template<>
+class peripheral<st::arm::m4::wb::rm0434::peripherals::TIM_G16, st::arm::m4::wb::rm0434::peripherals::TIM_G16::_16>
 {
 public:
     static st::arm::m4::wb::rm0434::peripherals::TIM_G16 create()
@@ -594,8 +629,11 @@ public:
         return { TIM16, st::arm::m4::wb::rm0434::peripherals::timer::TIM_irq::TIM16_IRQ };
     }
 };
+#endif
 
-template<> class peripheral<st::arm::m4::wb::rm0434::peripherals::TIM_G16, 17u>
+#if defined(XMCU_TIM17_PRESENT)
+template<>
+class peripheral<st::arm::m4::wb::rm0434::peripherals::TIM_G16, st::arm::m4::wb::rm0434::peripherals::TIM_G16::_17>
 {
 public:
     static st::arm::m4::wb::rm0434::peripherals::TIM_G16 create()
@@ -603,4 +641,5 @@ public:
         return { TIM17, st::arm::m4::wb::rm0434::peripherals::timer::TIM_irq::TIM17_IRQ };
     }
 };
+#endif
 } // namespace xmcu::soc

@@ -416,14 +416,11 @@ public:
     template<typename Source_t> static void enable(bool a_enable_in_lp) = delete;
     static void disable();
 };
-template<> template<>
-void rcc<peripherals::LPUART, peripherals::LPUART::_1>::enable<clocks::pclk<1u>>(bool a_enable_in_lp);
-template<> template<>
-void rcc<peripherals::LPUART, peripherals::LPUART::_1>::enable<rcc<system::mcu<1u>>>(bool a_enable_in_lp);
-template<> template<>
-void rcc<peripherals::LPUART, peripherals::LPUART::_1>::enable<clocks::sources::hsi16>(bool a_enable_in_lp);
-template<> template<>
-void rcc<peripherals::LPUART, peripherals::LPUART::_1>::enable<clocks::sources::lse>(bool a_enable_in_lp);
+
+template<> void rcc<peripherals::LPUART, peripherals::LPUART::_1>::enable<clocks::pclk<1u>>(bool a_enable_in_lp);
+template<> void rcc<peripherals::LPUART, peripherals::LPUART::_1>::enable<rcc<system::mcu<1u>>>(bool a_enable_in_lp);
+template<> void rcc<peripherals::LPUART, peripherals::LPUART::_1>::enable<clocks::sources::hsi16>(bool a_enable_in_lp);
+template<> void rcc<peripherals::LPUART, peripherals::LPUART::_1>::enable<clocks::sources::lse>(bool a_enable_in_lp);
 #endif
 
 template<>

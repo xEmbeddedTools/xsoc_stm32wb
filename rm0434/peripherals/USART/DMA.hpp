@@ -15,8 +15,8 @@
 #include <rm0434/DMA.hpp>
 #include <rm0434/peripherals/USART/LPUART.hpp>
 #include <rm0434/peripherals/USART/USART.hpp>
-#include <soc/st/arm/IRQ_config.hpp>
 #include <soc/peripheral.hpp>
+#include <soc/st/arm/IRQ_config.hpp>
 #include <xmcu/Duration.hpp>
 #include <xmcu/Non_copyable.hpp>
 #include <xmcu/Not_null.hpp>
@@ -404,8 +404,12 @@ private:
 } // namespace xmcu::soc::st::arm::m4::wb::rm0434
 
 namespace xmcu::soc {
-template<> class peripheral<st::arm::m4::wb::rm0434::peripherals::USART, 1u, st::arm::m4::wb::rm0434::DMA<>, 1u>
-    : private non_constructible
+#if defined(XMCU_USART1_PRESENT)
+#if defined(XMCU_DMA1_PRESENT)
+template<> class peripheral<st::arm::m4::wb::rm0434::peripherals::USART,
+                            st::arm::m4::wb::rm0434::peripherals::USART::_1,
+                            st::arm::m4::wb::rm0434::DMA<>,
+                            st::arm::m4::wb::rm0434::DMA<>::_1> : private non_constructible
 {
 public:
     static st::arm::m4::wb::rm0434::DMA<st::arm::m4::wb::rm0434::peripherals::USART> create()
@@ -413,8 +417,12 @@ public:
         return st::arm::m4::wb::rm0434::DMA<st::arm::m4::wb::rm0434::peripherals::USART>(0x0u, DMA1, USART1);
     }
 };
-template<> class peripheral<st::arm::m4::wb::rm0434::peripherals::USART, 1u, st::arm::m4::wb::rm0434::DMA<>, 2u>
-    : private non_constructible
+#endif
+#if defined(XMCU_DMA2_PRESENT)
+template<> class peripheral<st::arm::m4::wb::rm0434::peripherals::USART,
+                            st::arm::m4::wb::rm0434::peripherals::USART::_1,
+                            st::arm::m4::wb::rm0434::DMA<>,
+                            st::arm::m4::wb::rm0434::DMA<>::_2> : private non_constructible
 {
 public:
     static st::arm::m4::wb::rm0434::DMA<st::arm::m4::wb::rm0434::peripherals::USART> create()
@@ -422,9 +430,12 @@ public:
         return st::arm::m4::wb::rm0434::DMA<st::arm::m4::wb::rm0434::peripherals::USART>(0x1u, DMA2, USART1);
     }
 };
-
-template<> class peripheral<st::arm::m4::wb::rm0434::peripherals::LPUART, 1u, st::arm::m4::wb::rm0434::DMA<>, 1u>
-    : private non_constructible
+#endif
+#if defined(XMCU_DMA1_PRESENT)
+template<> class peripheral<st::arm::m4::wb::rm0434::peripherals::LPUART,
+                            st::arm::m4::wb::rm0434::peripherals::LPUART::_1,
+                            st::arm::m4::wb::rm0434::DMA<>,
+                            st::arm::m4::wb::rm0434::DMA<>::_1> : private non_constructible
 {
 public:
     static st::arm::m4::wb::rm0434::DMA<st::arm::m4::wb::rm0434::peripherals::LPUART> create()
@@ -432,8 +443,12 @@ public:
         return st::arm::m4::wb::rm0434::DMA<st::arm::m4::wb::rm0434::peripherals::LPUART>(0x0u, DMA1, LPUART1);
     }
 };
-template<> class peripheral<st::arm::m4::wb::rm0434::peripherals::LPUART, 1u, st::arm::m4::wb::rm0434::DMA<>, 2u>
-    : private non_constructible
+#endif
+#if defined(XMCU_DMA2_PRESENT)
+template<> class peripheral<st::arm::m4::wb::rm0434::peripherals::LPUART,
+                            st::arm::m4::wb::rm0434::peripherals::LPUART::_1,
+                            st::arm::m4::wb::rm0434::DMA<>,
+                            st::arm::m4::wb::rm0434::DMA<>::_2> : private non_constructible
 {
 public:
     static st::arm::m4::wb::rm0434::DMA<st::arm::m4::wb::rm0434::peripherals::LPUART> create()
@@ -441,4 +456,6 @@ public:
         return st::arm::m4::wb::rm0434::DMA<st::arm::m4::wb::rm0434::peripherals::LPUART>(0x1u, DMA2, LPUART1);
     }
 };
+#endif
+#endif
 } // namespace xmcu::soc

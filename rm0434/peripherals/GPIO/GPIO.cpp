@@ -738,7 +738,7 @@ void rcc<GPIO, GPIO::B>::disable()
 }
 #endif
 
-#if defined(XMCU_GPIOB_PRESENT)
+#if defined(XMCU_GPIOC_PRESENT)
 void rcc<GPIO, GPIO::C>::enable(bool a_enable_in_lp)
 {
     bit::flag::set(&(RCC->AHB2ENR), RCC_AHB2ENR_GPIOCEN);
@@ -752,7 +752,7 @@ void rcc<GPIO, GPIO::C>::enable(bool a_enable_in_lp)
         bit::flag::clear(&(RCC->AHB2SMENR), RCC_AHB2SMENR_GPIOCSMEN);
     }
 }
-void rcc<GPIO, GPIO::B>::disable()
+void rcc<GPIO, GPIO::C>::disable()
 {
     bit::flag::clear(&(RCC->AHB2ENR), RCC_AHB2ENR_GPIOCEN);
 }

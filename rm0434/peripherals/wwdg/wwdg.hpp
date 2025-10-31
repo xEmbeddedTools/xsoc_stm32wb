@@ -18,7 +18,6 @@
 #include <xmcu/non_constructible.hpp>
 
 namespace xmcu::soc::st::arm::m4::wb::rm0434::peripherals {
-
 class wwdg : private xmcu::non_constructible
 {
 public:
@@ -40,7 +39,7 @@ protected:
 } // namespace xmcu::soc::st::arm::m4::wb::rm0434::peripherals
 
 namespace xmcu::soc::st::arm::m4::wb::rm0434 {
-template<std::uint32_t id> class rcc<peripherals::wwdg, id> : private non_constructible
+template<> class rcc<peripherals::wwdg> : private non_constructible
 {
 public:
     static void enable(bool a_enable_in_lp)

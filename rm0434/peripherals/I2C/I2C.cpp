@@ -12,6 +12,8 @@
 
 namespace xmcu::soc::st::arm::m4::wb::rm0434 {
 using namespace xmcu;
+using namespace xmcu::soc::st::arm::m4::wb::rm0434::system;
+using namespace xmcu::soc::st::arm::m4::wb::rm0434::peripherals;
 using namespace xmcu::soc::st::arm::m4::wb::rm0434::clocks;
 using namespace xmcu::soc::st::arm::m4::wb::rm0434::clocks::sources;
 
@@ -72,56 +74,58 @@ template<> void enable_rcc_impl<0x03u>(Clk_Sel a_sel, bool a_enable_in_lp)
     }
 }
 
-template<> template<> void rcc<peripherals::I2C, 1u>::enable<pclk<1u>>(bool a_enable_in_lp)
+#if defined(XMCU_I2C1_PRESENT)
+template<> void rcc<I2C, I2C::_1>::enable<pclk<1u>>(bool a_enable_in_lp)
 {
     return enable_rcc_impl<1u>(Clk_Sel::PCLK, a_enable_in_lp);
 }
-template<> template<> void rcc<peripherals::I2C, 1u>::enable<rcc<system::mcu<1u>>>(bool a_enable_in_lp)
+template<> void rcc<I2C, I2C::_1>::enable<rcc<mcu<1u>>>(bool a_enable_in_lp)
 {
     return enable_rcc_impl<1u>(Clk_Sel::SYSCLK, a_enable_in_lp);
 }
-template<> template<> void rcc<peripherals::I2C, 1u>::enable<sources::hsi16>(bool a_enable_in_lp)
+template<> void rcc<I2C, I2C::_1>::enable<hsi16>(bool a_enable_in_lp)
 {
     return enable_rcc_impl<1u>(Clk_Sel::HSI16, a_enable_in_lp);
 }
-template<> void rcc<peripherals::I2C, 1u>::disable()
+void rcc<I2C, I2C::_1>::disable()
 {
     bit::flag::clear(&RCC->CCIPR, RCC_CCIPR_I2C1SEL);
     bit::flag::clear(&RCC->APB1ENR1, RCC_APB1ENR1_I2C1EN);
 
     bit::flag::clear(&RCC->APB1SMENR1, RCC_APB1SMENR1_I2C1SMEN);
 }
-template<> std::uint32_t rcc<peripherals::I2C, 1u>::get_frequency_Hz()
+std::uint32_t rcc<I2C, I2C::_1>::get_frequency_Hz()
 {
     std::uint32_t reg_flags = bit::flag::get(RCC->CCIPR, RCC_CCIPR_I2C1SEL) >> RCC_CCIPR_I2C1SEL_Pos;
     return get_freq(static_cast<Clk_Sel>(reg_flags));
 }
-
-template<> template<> void rcc<peripherals::I2C, 3u>::enable<pclk<1u>>(bool a_enable_in_lp)
+#endif
+#if defined(XMCU_I2C3_PRESENT)
+template<> void rcc<I2C, I2C::_3>::enable<pclk<1u>>(bool a_enable_in_lp)
 {
     return enable_rcc_impl<3u>(Clk_Sel::PCLK, a_enable_in_lp);
 }
-template<> template<> void rcc<peripherals::I2C, 3u>::enable<rcc<system::mcu<1u>>>(bool a_enable_in_lp)
+template<> void rcc<I2C, I2C::_3>::enable<rcc<mcu<1u>>>(bool a_enable_in_lp)
 {
     return enable_rcc_impl<3u>(Clk_Sel::SYSCLK, a_enable_in_lp);
 }
-template<> template<> void rcc<peripherals::I2C, 3u>::enable<sources::hsi16>(bool a_enable_in_lp)
+template<> void rcc<I2C, I2C::_3>::enable<hsi16>(bool a_enable_in_lp)
 {
     return enable_rcc_impl<3u>(Clk_Sel::HSI16, a_enable_in_lp);
 }
-template<> void rcc<peripherals::I2C, 3u>::disable()
+void rcc<I2C, I2C::_3>::disable()
 {
     bit::flag::clear(&RCC->CCIPR, RCC_CCIPR_I2C3SEL);
     bit::flag::clear(&RCC->APB1ENR1, RCC_APB1ENR1_I2C3EN);
 
     bit::flag::clear(&RCC->APB1SMENR1, RCC_APB1SMENR1_I2C3SMEN);
 }
-template<> std::uint32_t rcc<peripherals::I2C, 3u>::get_frequency_Hz()
+std::uint32_t rcc<I2C, I2C::_3>::get_frequency_Hz()
 {
     std::uint32_t reg_flags = bit::flag::get(RCC->CCIPR, RCC_CCIPR_I2C3SEL) >> RCC_CCIPR_I2C3SEL_Pos;
     return get_freq(static_cast<Clk_Sel>(reg_flags));
 }
-
+#endif
 } // namespace xmcu::soc::st::arm::m4::wb::rm0434
 
 namespace xmcu::soc::st::arm::m4::wb::rm0434::peripherals {

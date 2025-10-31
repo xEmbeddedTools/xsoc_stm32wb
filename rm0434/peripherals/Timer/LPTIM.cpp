@@ -9,8 +9,8 @@
 // xmcu
 #include <rm0434/utils/tick_counter.hpp>
 #include <rm0434/utils/wait_until.hpp>
-#include <soc/st/arm/m4/nvic.hpp>
 #include <soc/Scoped_guard.hpp>
+#include <soc/st/arm/m4/nvic.hpp>
 #include <xmcu/various.hpp>
 
 // debug
@@ -163,7 +163,8 @@ using namespace xmcu::soc::st::arm::m4::wb::rm0434::clocks::sources;
 using namespace xmcu::soc::st::arm::m4::wb::rm0434::clocks;
 using namespace xmcu::soc::st::arm::m4::wb::rm0434::system;
 
-template<> template<> void rcc<LPTIM, 1>::enable<pclk<1u>>(bool a_enable_in_lp)
+#if defined(XMCU_LPTIM1_PRESENT)
+template<> void rcc<LPTIM, LPTIM::_1>::enable<pclk<1u>>(bool a_enable_in_lp)
 {
     bit::flag::clear(&(RCC->CCIPR), RCC_CCIPR_LPTIM1SEL);
     bit::flag::set(&(RCC->APB1ENR1), RCC_APB1ENR1_LPTIM1EN);
@@ -177,7 +178,7 @@ template<> template<> void rcc<LPTIM, 1>::enable<pclk<1u>>(bool a_enable_in_lp)
         bit::flag::clear(&(RCC->APB1SMENR1), RCC_APB1SMENR1_LPTIM1SMEN);
     }
 }
-template<> template<> void rcc<peripherals::LPTIM, 1>::enable<lsi>(bool a_enable_in_lp)
+template<> void rcc<LPTIM, LPTIM::_1>::enable<lsi>(bool a_enable_in_lp)
 {
     bit::flag::set(&(RCC->CCIPR), RCC_CCIPR_LPTIM1SEL, RCC_CCIPR_LPTIM1SEL_0);
     bit::flag::set(&(RCC->APB1ENR1), RCC_APB1ENR1_LPTIM1EN);
@@ -191,7 +192,7 @@ template<> template<> void rcc<peripherals::LPTIM, 1>::enable<lsi>(bool a_enable
         bit::flag::clear(&(RCC->APB1SMENR1), RCC_APB1SMENR1_LPTIM1SMEN);
     }
 }
-template<> template<> void rcc<peripherals::LPTIM, 1>::enable<hsi16>(bool a_enable_in_lp)
+template<> void rcc<LPTIM, LPTIM::_1>::enable<hsi16>(bool a_enable_in_lp)
 {
     bit::flag::set(&(RCC->CCIPR), RCC_CCIPR_LPTIM1SEL, RCC_CCIPR_LPTIM1SEL_1);
     bit::flag::set(&(RCC->APB1ENR1), RCC_APB1ENR1_LPTIM1EN);
@@ -205,7 +206,7 @@ template<> template<> void rcc<peripherals::LPTIM, 1>::enable<hsi16>(bool a_enab
         bit::flag::clear(&(RCC->APB1SMENR1), RCC_APB1SMENR1_LPTIM1SMEN);
     }
 }
-template<> template<> void rcc<peripherals::LPTIM, 1>::enable<lse>(bool a_enable_in_lp)
+template<> void rcc<LPTIM, LPTIM::_1>::enable<lse>(bool a_enable_in_lp)
 {
     bit::flag::set(&(RCC->CCIPR), RCC_CCIPR_LPTIM1SEL);
     bit::flag::set(&(RCC->APB1ENR1), RCC_APB1ENR1_LPTIM1EN);
@@ -219,8 +220,9 @@ template<> template<> void rcc<peripherals::LPTIM, 1>::enable<lse>(bool a_enable
         bit::flag::clear(&(RCC->APB1SMENR1), RCC_APB1SMENR1_LPTIM1SMEN);
     }
 }
-
-template<> template<> void rcc<peripherals::LPTIM, 2>::enable<pclk<1u>>(bool a_enable_in_lp)
+#endif
+#if defined(XMCU_LPTIM2_PRESENT)
+template<> void rcc<LPTIM, LPTIM::_2>::enable<pclk<1u>>(bool a_enable_in_lp)
 {
     bit::flag::clear(&(RCC->CCIPR), RCC_CCIPR_LPTIM2SEL);
     bit::flag::set(&(RCC->APB1ENR2), RCC_APB1ENR2_LPTIM2EN);
@@ -234,7 +236,7 @@ template<> template<> void rcc<peripherals::LPTIM, 2>::enable<pclk<1u>>(bool a_e
         bit::flag::clear(&(RCC->APB1SMENR2), RCC_APB1SMENR2_LPTIM2SMEN);
     }
 }
-template<> template<> void rcc<peripherals::LPTIM, 2>::enable<lsi>(bool a_enable_in_lp)
+template<> void rcc<LPTIM, LPTIM::_2>::enable<lsi>(bool a_enable_in_lp)
 {
     bit::flag::set(&(RCC->CCIPR), RCC_CCIPR_LPTIM2SEL, RCC_CCIPR_LPTIM2SEL_0);
     bit::flag::set(&(RCC->APB1ENR2), RCC_APB1ENR2_LPTIM2EN);
@@ -248,7 +250,7 @@ template<> template<> void rcc<peripherals::LPTIM, 2>::enable<lsi>(bool a_enable
         bit::flag::clear(&(RCC->APB1SMENR2), RCC_APB1SMENR2_LPTIM2SMEN);
     }
 }
-template<> template<> void rcc<peripherals::LPTIM, 2>::enable<hsi16>(bool a_enable_in_lp)
+template<> void rcc<LPTIM, LPTIM::_2>::enable<hsi16>(bool a_enable_in_lp)
 {
     bit::flag::set(&(RCC->CCIPR), RCC_CCIPR_LPTIM2SEL, RCC_CCIPR_LPTIM2SEL_1);
     bit::flag::set(&(RCC->APB1ENR2), RCC_APB1ENR2_LPTIM2EN);
@@ -262,7 +264,7 @@ template<> template<> void rcc<peripherals::LPTIM, 2>::enable<hsi16>(bool a_enab
         bit::flag::clear(&(RCC->APB1SMENR2), RCC_APB1SMENR2_LPTIM2SMEN);
     }
 }
-template<> template<> void rcc<peripherals::LPTIM, 2>::enable<lse>(bool a_enable_in_lp)
+template<> void rcc<LPTIM, LPTIM::_2>::enable<lse>(bool a_enable_in_lp)
 {
     bit::flag::set(&(RCC->CCIPR), RCC_CCIPR_LPTIM2SEL);
     bit::flag::set(&(RCC->APB1ENR2), RCC_APB1ENR2_LPTIM2EN);
@@ -276,4 +278,5 @@ template<> template<> void rcc<peripherals::LPTIM, 2>::enable<lse>(bool a_enable
         bit::flag::clear(&(RCC->APB1SMENR2), RCC_APB1SMENR2_LPTIM2SMEN);
     }
 }
+#endif
 } // namespace xmcu::soc::st::arm::m4::wb::rm0434

@@ -7,8 +7,8 @@
 #include <rm0434/peripherals/Timer/TIM.hpp>
 
 // xmcu
-#include <soc/st/arm/m4/nvic.hpp>
 #include <soc/Scoped_guard.hpp>
+#include <soc/st/arm/m4/nvic.hpp>
 #include <xmcu/bit.hpp>
 
 // Tim_counter & derived
@@ -194,7 +194,7 @@ extern "C" {
 void TIM1_BRK_IRQHandler(void)
 {
     constexpr std::uint32_t irqn = static_cast<std::uint32_t>(TIM_irq::TIM1_BRK);
-    if (rcc<TIM_ADV, 1u>::is_enabled())
+    if (rcc<TIM_ADV, TIM_ADV::_1>::is_enabled())
         if (std::uint32_t sr = read_pending(TIM1, irq_constants[irqn].sr))
         {
             Interrupt* h = handlers[irqn];
@@ -208,7 +208,7 @@ void TIM1_UP_TIM16_IRQHandler(void)
     // section TIM1
     {
         constexpr std::uint32_t irqn = static_cast<std::uint32_t>(TIM_irq::TIM1_UP);
-        if (rcc<TIM_ADV, 1u>::is_enabled())
+        if (rcc<TIM_ADV, TIM_ADV::_1>::is_enabled())
             if (std::uint32_t sr = read_pending(TIM1, irq_constants[irqn].sr))
             {
                 Interrupt* h = handlers[irqn];
@@ -219,7 +219,7 @@ void TIM1_UP_TIM16_IRQHandler(void)
     // section TIM16
     {
         constexpr std::uint32_t irqn = static_cast<std::uint32_t>(TIM_irq::TIM16_IRQ);
-        if (rcc<TIM_G16, 16u>::is_enabled())
+        if (rcc<TIM_G16, TIM_G16::_16>::is_enabled())
             if (std::uint32_t sr = read_pending(TIM16, irq_constants[irqn].sr))
             {
                 Interrupt* h = handlers[irqn];
@@ -235,7 +235,7 @@ void TIM1_TRG_COM_TIM17_IRQHandler(void)
     // section TIM1
     {
         constexpr std::uint32_t irqn = static_cast<std::uint32_t>(TIM_irq::TIM1_TRG);
-        if (rcc<TIM_ADV, 1u>::is_enabled())
+        if (rcc<TIM_ADV, TIM_ADV::_1>::is_enabled())
             if (std::uint32_t sr = read_pending(TIM1, irq_constants[irqn].sr))
             {
                 Interrupt* h = handlers[irqn];
@@ -246,7 +246,7 @@ void TIM1_TRG_COM_TIM17_IRQHandler(void)
     // section TIM17
     {
         constexpr std::uint32_t irqn = static_cast<std::uint32_t>(TIM_irq::TIM17_IRQ);
-        if (rcc<TIM_G16, 17u>::is_enabled())
+        if (rcc<TIM_G16, TIM_G16::_17>::is_enabled())
             if (std::uint32_t sr = read_pending(TIM17, irq_constants[irqn].sr))
             {
                 Interrupt* h = handlers[irqn];
@@ -259,7 +259,7 @@ void TIM1_TRG_COM_TIM17_IRQHandler(void)
 void TIM1_CC_IRQHandler(void)
 {
     constexpr std::uint32_t irqn = static_cast<std::uint32_t>(TIM_irq::TIM1_CC);
-    if (rcc<TIM_ADV, 1u>::is_enabled())
+    if (rcc<TIM_ADV, TIM_ADV::_1>::is_enabled())
         if (std::uint32_t sr = read_pending(TIM1, irq_constants[irqn].sr))
         {
             Interrupt* h = handlers[irqn];
