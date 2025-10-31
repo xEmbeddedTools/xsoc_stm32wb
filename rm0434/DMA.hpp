@@ -6,14 +6,13 @@
  */
 
 // externals
-#pragma GCC diagnostic ignored "-Wvolatile"
 #include <stm32wbxx.h>
-#pragma GCC diagnostic pop
 
 // std
 #include <cstdint>
 
 // xmcu
+#include <rm0434/config.hpp>
 #include <soc/st/arm/m4/wb/rm0434/rcc.hpp>
 #include <xmcu/Non_copyable.hpp>
 #include <xmcu/bit.hpp>
@@ -24,6 +23,13 @@ namespace xmcu::soc::st::arm::m4::wb::rm0434 {
 template<typename Perihperal_t = void*> class DMA : private xmcu::Non_copyable
 {
 public:
+#if defined(XMCU_DMA1_PRESENT)
+    enum class _1;
+#endif
+#if defined(XMCU_DMA2_PRESENT)
+    enum class _2;
+#endif
+
     enum class Priority : std::uint32_t
     {
         very_high = DMA_CCR_PL_0 | DMA_CCR_PL_1,
@@ -84,7 +90,8 @@ constexpr DMA<>::Event_flag operator|=(DMA<>::Event_flag& a_f1, DMA<>::Event_fla
     return a_f1;
 }
 
-template<> class rcc<DMA<>, 1> : private xmcu::non_constructible
+#if defined(XMCU_DMA1_PRESENT)
+template<> class rcc<DMA<>, DMA<>::_1> : private xmcu::non_constructible
 {
 public:
     static void enable()
@@ -98,8 +105,9 @@ public:
         bit::flag::clear(&(RCC->AHB1ENR), RCC_AHB1ENR_DMAMUX1EN);
     }
 };
-
-template<> class rcc<DMA<>, 2> : private xmcu::non_constructible
+#endif
+#if defined(XMCU_DMA2_PRESENT)
+template<> class rcc<DMA<>, DMA<>::_2> : private xmcu::non_constructible
 {
 public:
     static void enable()
@@ -111,4 +119,5 @@ public:
         bit::flag::clear(&(RCC->AHB1ENR), RCC_AHB1ENR_DMA2EN);
     }
 };
+#endif
 } // namespace xmcu::soc::st::arm::m4::wb::rm0434

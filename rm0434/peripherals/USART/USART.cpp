@@ -10,8 +10,8 @@
 // xmcu
 #include <rm0434/utils/tick_counter.hpp>
 #include <rm0434/utils/wait_until.hpp>
-#include <soc/st/arm/m4/nvic.hpp>
 #include <soc/Scoped_guard.hpp>
+#include <soc/st/arm/m4/nvic.hpp>
 
 // debug
 #include <xmcu/assertion.hpp>
@@ -1151,7 +1151,7 @@ using namespace xmcu::soc::st::arm::m4::wb::rm0434::clocks;
 using namespace xmcu::soc::st::arm::m4::wb::rm0434::clocks::sources;
 using namespace xmcu::soc::st::arm::m4::wb::rm0434::system;
 
-template<> template<> void rcc<peripherals::USART, 1u>::enable<pclk<2u>>(bool a_enable_in_lp)
+template<> template<> void rcc<USART, USART::_1>::enable<pclk<2u>>(bool a_enable_in_lp)
 {
     bit::flag::clear(&(RCC->CCIPR), RCC_CCIPR_USART1SEL);
     bit::flag::set(&(RCC->APB2ENR), RCC_APB2ENR_USART1EN);
@@ -1165,7 +1165,7 @@ template<> template<> void rcc<peripherals::USART, 1u>::enable<pclk<2u>>(bool a_
         bit::flag::clear(&(RCC->APB2SMENR), RCC_APB2SMENR_USART1SMEN);
     }
 }
-template<> template<> void rcc<peripherals::USART, 1u>::enable<rcc<mcu<1u>>>(bool a_enable_in_lp)
+template<> template<> void rcc<USART, USART::_1>::enable<rcc<mcu<1u>>>(bool a_enable_in_lp)
 {
     bit::flag::set(&(RCC->CCIPR), RCC_CCIPR_USART1SEL, RCC_CCIPR_USART1SEL_0);
     bit::flag::set(&(RCC->APB2ENR), RCC_APB2ENR_USART1EN);
@@ -1179,7 +1179,7 @@ template<> template<> void rcc<peripherals::USART, 1u>::enable<rcc<mcu<1u>>>(boo
         bit::flag::clear(&(RCC->APB2SMENR), RCC_APB2SMENR_USART1SMEN);
     }
 }
-template<> template<> void rcc<peripherals::USART, 1u>::enable<hsi16>(bool a_enable_in_lp)
+template<> template<> void rcc<USART, USART::_1>::enable<hsi16>(bool a_enable_in_lp)
 {
     bit::flag::set(&(RCC->CCIPR), RCC_CCIPR_USART1SEL, RCC_CCIPR_USART1SEL_1);
     bit::flag::set(&(RCC->APB2ENR), RCC_APB2ENR_USART1EN);
@@ -1193,7 +1193,7 @@ template<> template<> void rcc<peripherals::USART, 1u>::enable<hsi16>(bool a_ena
         bit::flag::clear(&(RCC->APB2SMENR), RCC_APB2SMENR_USART1SMEN);
     }
 }
-template<> template<> void rcc<peripherals::USART, 1u>::enable<lse>(bool a_enable_in_lp)
+template<> template<> void rcc<USART, USART::_1>::enable<lse>(bool a_enable_in_lp)
 {
     bit::flag::set(&(RCC->CCIPR), RCC_CCIPR_USART1SEL);
     bit::flag::set(&(RCC->APB2ENR), RCC_APB2ENR_USART1EN);
@@ -1207,13 +1207,13 @@ template<> template<> void rcc<peripherals::USART, 1u>::enable<lse>(bool a_enabl
         bit::flag::clear(&(RCC->APB2SMENR), RCC_APB2SMENR_USART1SMEN);
     }
 }
-template<> void rcc<peripherals::USART, 1u>::disable()
+template<> void rcc<USART, USART::_1>::disable()
 {
     bit::flag::clear(&(RCC->CCIPR), RCC_CCIPR_USART1SEL);
     bit::flag::clear(&(RCC->APB2ENR), RCC_APB2ENR_USART1EN);
 }
 
-template<> template<> void rcc<peripherals::LPUART, 1u>::enable<pclk<1u>>(bool a_enable_in_lp)
+template<> template<> void rcc<LPUART, LPUART::_1>::enable<pclk<1u>>(bool a_enable_in_lp)
 {
     bit::flag::clear(&(RCC->CCIPR), RCC_CCIPR_LPUART1SEL);
     bit::flag::set(&(RCC->APB1ENR2), RCC_APB1ENR2_LPUART1EN);
@@ -1227,7 +1227,7 @@ template<> template<> void rcc<peripherals::LPUART, 1u>::enable<pclk<1u>>(bool a
         bit::flag::clear(&(RCC->APB1SMENR2), RCC_APB1SMENR2_LPUART1SMEN);
     }
 }
-template<> template<> void rcc<peripherals::LPUART, 1u>::enable<rcc<mcu<1u>>>(bool a_enable_in_lp)
+template<> template<> void rcc<LPUART, LPUART::_1>::enable<rcc<mcu<1u>>>(bool a_enable_in_lp)
 {
     bit::flag::set(&(RCC->CCIPR), RCC_CCIPR_LPUART1SEL, RCC_CCIPR_LPUART1SEL_0);
     bit::flag::set(&(RCC->APB1ENR2), RCC_APB1ENR2_LPUART1EN);
@@ -1241,7 +1241,7 @@ template<> template<> void rcc<peripherals::LPUART, 1u>::enable<rcc<mcu<1u>>>(bo
         bit::flag::clear(&(RCC->APB1SMENR2), RCC_APB1SMENR2_LPUART1SMEN);
     }
 }
-template<> template<> void rcc<peripherals::LPUART, 1u>::enable<hsi16>(bool a_enable_in_lp)
+template<> template<> void rcc<LPUART, LPUART::_1>::enable<hsi16>(bool a_enable_in_lp)
 {
     bit::flag::set(&(RCC->CCIPR), RCC_CCIPR_LPUART1SEL, RCC_CCIPR_LPUART1SEL_1);
     bit::flag::set(&(RCC->APB1ENR2), RCC_APB1ENR2_LPUART1EN);
@@ -1255,7 +1255,7 @@ template<> template<> void rcc<peripherals::LPUART, 1u>::enable<hsi16>(bool a_en
         bit::flag::clear(&(RCC->APB1SMENR2), RCC_APB1SMENR2_LPUART1SMEN);
     }
 }
-template<> template<> void rcc<peripherals::LPUART, 1u>::enable<lse>(bool a_enable_in_lp)
+template<> template<> void rcc<LPUART, LPUART::_1>::enable<lse>(bool a_enable_in_lp)
 {
     bit::flag::set(&(RCC->CCIPR), RCC_CCIPR_LPUART1SEL_0 | RCC_CCIPR_LPUART1SEL_1);
     bit::flag::set(&(RCC->APB1ENR2), RCC_APB1ENR2_LPUART1EN);
@@ -1270,7 +1270,7 @@ template<> template<> void rcc<peripherals::LPUART, 1u>::enable<lse>(bool a_enab
     }
 }
 
-template<> void rcc<peripherals::LPUART, 1>::disable()
+template<> void rcc<LPUART, LPUART::_1>::disable()
 {
     bit::flag::clear(&(RCC->CCIPR), RCC_CCIPR_LPUART1SEL);
     bit::flag::clear(&(RCC->APB1ENR2), RCC_APB1ENR2_LPUART1EN);

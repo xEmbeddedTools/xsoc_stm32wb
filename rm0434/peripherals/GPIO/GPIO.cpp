@@ -698,8 +698,8 @@ namespace xmcu::soc::st::arm::m4::wb::rm0434 {
 using namespace xmcu::soc::st::arm::m4::wb::rm0434::peripherals;
 using namespace xmcu::soc::st::arm::m4::wb::rm0434::system;
 
-#if defined(GPIOA_PIN_MASK)
-template<> void rcc<GPIO, 1>::enable(bool a_enable_in_lp)
+#if defined(XMCU_GPIOA_PRESENT)
+void rcc<GPIO, GPIO::A>::enable(bool a_enable_in_lp)
 {
     bit::flag::set(&(RCC->AHB2ENR), RCC_AHB2ENR_GPIOAEN);
 
@@ -712,14 +712,14 @@ template<> void rcc<GPIO, 1>::enable(bool a_enable_in_lp)
         bit::flag::clear(&(RCC->AHB2SMENR), RCC_AHB2SMENR_GPIOASMEN);
     }
 }
-template<> void rcc<GPIO, 1>::disable()
+void rcc<GPIO, GPIO::A>::disable()
 {
     bit::flag::clear(&(RCC->AHB2ENR), RCC_AHB2ENR_GPIOAEN);
 }
 #endif
 
-#if defined(GPIOB_PIN_MASK)
-template<> void rcc<GPIO, 2>::enable(bool a_enable_in_lp)
+#if defined(XMCU_GPIOB_PRESENT)
+void rcc<GPIO, GPIO::B>::enable(bool a_enable_in_lp)
 {
     bit::flag::set(&(RCC->AHB2ENR), RCC_AHB2ENR_GPIOBEN);
 
@@ -732,14 +732,14 @@ template<> void rcc<GPIO, 2>::enable(bool a_enable_in_lp)
         bit::flag::clear(&(RCC->AHB2SMENR), RCC_AHB2SMENR_GPIOBSMEN);
     }
 }
-template<> void rcc<GPIO, 2>::disable()
+void rcc<GPIO, GPIO::B>::disable()
 {
     bit::flag::clear(&(RCC->AHB2ENR), RCC_AHB2ENR_GPIOBEN);
 }
 #endif
 
-#if defined(GPIOC_PIN_MASK)
-template<> void rcc<GPIO, 3>::enable(bool a_enable_in_lp)
+#if defined(XMCU_GPIOB_PRESENT)
+void rcc<GPIO, GPIO::C>::enable(bool a_enable_in_lp)
 {
     bit::flag::set(&(RCC->AHB2ENR), RCC_AHB2ENR_GPIOCEN);
 
@@ -752,34 +752,14 @@ template<> void rcc<GPIO, 3>::enable(bool a_enable_in_lp)
         bit::flag::clear(&(RCC->AHB2SMENR), RCC_AHB2SMENR_GPIOCSMEN);
     }
 }
-template<> void rcc<GPIO, 3>::disable()
+void rcc<GPIO, GPIO::B>::disable()
 {
     bit::flag::clear(&(RCC->AHB2ENR), RCC_AHB2ENR_GPIOCEN);
 }
 #endif
 
-#if defined(GPIOD_PIN_MASK)
-template<> void rcc<GPIO, 4>::enable(bool a_enable_in_lp)
-{
-    bit::flag::set(&(RCC->AHB2ENR), RCC_AHB2ENR_GPIODEN);
-
-    if (true == a_enable_in_lp)
-    {
-        bit::flag::set(&(RCC->AHB2SMENR), RCC_AHB2SMENR_GPIODSMEN);
-    }
-    else
-    {
-        bit::flag::clear(&(RCC->AHB2SMENR), RCC_AHB2SMENR_GPIODSMEN);
-    }
-}
-template<> void rcc<GPIO, 4>::disable()
-{
-    bit::flag::clear(&(RCC->AHB2ENR), RCC_AHB2ENR_GPIODEN);
-}
-#endif
-
-#if defined(GPIOE_PIN_MASK)
-template<> void rcc<GPIO, 5>::enable(bool a_enable_in_lp)
+#if defined(XMCU_GPIOE_PRESENT)
+void rcc<GPIO, GPIO::E>::enable(bool a_enable_in_lp)
 {
     bit::flag::set(&(RCC->AHB2ENR), RCC_AHB2ENR_GPIOEEN);
 
@@ -792,14 +772,14 @@ template<> void rcc<GPIO, 5>::enable(bool a_enable_in_lp)
         bit::flag::clear(&(RCC->AHB2SMENR), RCC_AHB2SMENR_GPIOESMEN);
     }
 }
-template<> void rcc<GPIO, 5>::disable()
+void rcc<GPIO, GPIO::E>::disable()
 {
     bit::flag::clear(&(RCC->AHB2ENR), RCC_AHB2ENR_GPIOEEN);
 }
 #endif
 
-#if defined(GPIOH_PIN_MASK)
-template<> void rcc<GPIO, 8>::enable(bool a_enable_in_lp)
+#if defined(XMCU_GPIOH_PRESENT)
+void rcc<GPIO, GPIO::H>::enable(bool a_enable_in_lp)
 {
     bit::flag::set(&(RCC->AHB2ENR), RCC_AHB2ENR_GPIOHEN);
 
@@ -812,7 +792,7 @@ template<> void rcc<GPIO, 8>::enable(bool a_enable_in_lp)
         bit::flag::clear(&(RCC->AHB2SMENR), RCC_AHB2SMENR_GPIOHSMEN);
     }
 }
-template<> inline void rcc<GPIO, 8>::disable()
+void rcc<GPIO, GPIO::H>::disable()
 {
     bit::flag::clear(&(RCC->AHB2ENR), RCC_AHB2ENR_GPIOHEN);
 }

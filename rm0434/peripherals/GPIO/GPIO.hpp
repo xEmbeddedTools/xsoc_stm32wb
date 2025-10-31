@@ -17,6 +17,7 @@
 #include <rm0434/clocks/sources/lse.hpp>
 #include <rm0434/clocks/sources/lsi.hpp>
 #include <rm0434/clocks/sources/pll.hpp>
+#include <rm0434/peripherals/GPIO/base.hpp>
 #include <rm0434/peripherals/GPIO/gpio_ll.hpp>
 #include <rm0434/rcc.hpp>
 #include <rm0434/system/mcu/mcu.hpp>
@@ -31,36 +32,25 @@
 // debug
 #include <xmcu/assertion.hpp>
 
-// TODO: use with xmcu_assert in gpio pin initialization to check if pin can actually be used
-#define BV(x) (1 << (x))
-#if defined(XMCU_SOC_MODEL_STM32WB35CEU6A) || defined(XMCU_SOC_MODEL_STM32WB55CGU6)
-#define GPIOA_PIN_MASK                                                                                          \
-    (BV(0) | BV(1) | BV(2) | BV(3) | BV(4) | BV(5) | BV(6) | BV(7) | BV(8) | BV(9) | BV(10) | BV(11) | BV(12) | \
-     BV(13) | BV(14) | BV(15))
-#define GPIOB_PIN_MASK (BV(0) | BV(1) | BV(2) | BV(3) | BV(4) | BV(5) | BV(6) | BV(7) | BV(8) | BV(9))
-#define GPIOC_PIN_MASK (BV(14) | BV(15))
-#define GPIOE_PIN_MASK (BV(4))
-#define GPIOH_PIN_MASK (BV(3))
-#elif defined(XMCU_SOC_MODEL_STM32WB55RGV)
-#define GPIOA_PIN_MASK                                                                                          \
-    (BV(0) | BV(1) | BV(2) | BV(3) | BV(4) | BV(5) | BV(6) | BV(7) | BV(8) | BV(9) | BV(10) | BV(11) | BV(12) | \
-     BV(13) | BV(14) | BV(15))
-#define GPIOB_PIN_MASK                                                                                          \
-    (BV(0) | BV(1) | BV(2) | BV(3) | BV(4) | BV(5) | BV(6) | BV(7) | BV(8) | BV(9) | BV(10) | BV(11) | BV(12) | \
-     BV(13) | BV(14) | BV(15))
-#define GPIOC_PIN_MASK (BV(1) | BV(2) | BV(3) | BV(4) | BV(5) | BV(6) | BV(10) | BV(11) | BV(12))
-#define GPIOD_PIN_MASK (BV(0) | BV(1))
-#define GPIOE_PIN_MASK (BV(4))
-#define GPIOH_PIN_MASK (BV(3))
-#else
-#error "Undefined GPIO pins for device"
-#endif
-#undef BVs
-
 namespace xmcu::soc::st::arm::m4::wb::rm0434::peripherals {
 class GPIO : private Non_copyable
 {
 public:
+#if defined(XMCU_GPIOA_PRESENT)
+    using A = ll::gpio_base::A;
+#endif
+#if defined(XMCU_GPIOB_PRESENT)
+    using B = ll::gpio_base::B;
+#endif
+#if defined(XMCU_GPIOC_PRESENT)
+    using C = ll::gpio_base::C;
+#endif
+#if defined(XMCU_GPIOE_PRESENT)
+    using E = ll::gpio_base::E;
+#endif
+#if defined(XMCU_GPIOH_PRESENT)
+    using H = ll::gpio_base::H;
+#endif
     enum class Level : std::uint32_t
     {
         low = static_cast<std::uint32_t>(ll::gpio::ODR::low),
@@ -591,30 +581,46 @@ constexpr GPIO::Interrupt::Trigger_flag operator|=(GPIO::Interrupt::Trigger_flag
 } // namespace xmcu::soc::st::arm::m4::wb::rm0434::peripherals
 
 namespace xmcu::soc::st::arm::m4::wb::rm0434 {
-template<std::uint32_t id> class rcc<peripherals::GPIO, id> : private xmcu::non_constructible
+#if defined(XMCU_GPIOA_PRESENT)
+template<> class rcc<peripherals::GPIO, peripherals::GPIO::A> : private xmcu::non_constructible
 {
 public:
-    static void enable(bool a_enable_in_lp) = delete;
-    static void disable() = delete;
+    static void enable(bool a_enable_in_lp);
+    static void disable();
 };
-
-template<> void rcc<peripherals::GPIO, 1>::enable(bool a_enable_in_lp);
-template<> void rcc<peripherals::GPIO, 1>::disable();
-
-template<> void rcc<peripherals::GPIO, 2>::enable(bool a_enable_in_lp);
-template<> void rcc<peripherals::GPIO, 2>::disable();
-
-template<> void rcc<peripherals::GPIO, 3>::enable(bool a_enable_in_lp);
-template<> void rcc<peripherals::GPIO, 3>::disable();
-
-template<> void rcc<peripherals::GPIO, 4>::enable(bool a_enable_in_lp);
-template<> void rcc<peripherals::GPIO, 4>::disable();
-
-template<> void rcc<peripherals::GPIO, 5>::enable(bool a_enable_in_lp);
-template<> void rcc<peripherals::GPIO, 5>::disable();
-
-template<> void rcc<peripherals::GPIO, 8>::enable(bool a_enable_in_lp);
-template<> void rcc<peripherals::GPIO, 8>::disable();
+#endif
+#if defined(XMCU_GPIOB_PRESENT)
+template<> class rcc<peripherals::GPIO, peripherals::GPIO::B> : private xmcu::non_constructible
+{
+public:
+    static void enable(bool a_enable_in_lp);
+    static void disable();
+};
+#endif
+#if defined(XMCU_GPIOC_PRESENT)
+template<> class rcc<peripherals::GPIO, peripherals::GPIO::C> : private xmcu::non_constructible
+{
+public:
+    static void enable(bool a_enable_in_lp);
+    static void disable();
+};
+#endif
+#if defined(XMCU_GPIOE_PRESENT)
+template<> class rcc<peripherals::GPIO, peripherals::GPIO::E> : private xmcu::non_constructible
+{
+public:
+    static void enable(bool a_enable_in_lp);
+    static void disable();
+};
+#endif
+#if defined(XMCU_GPIOH_PRESENT)
+template<> class rcc<peripherals::GPIO, peripherals::GPIO::H> : private xmcu::non_constructible
+{
+public:
+    static void enable(bool a_enable_in_lp);
+    static void disable();
+};
+#endif
 
 template<>
 void peripherals::GPIO::Alternate_function::enable<peripherals::GPIO::mco>(Limited<std::uint32_t, 0, 15> a_id,
@@ -628,7 +634,8 @@ void peripherals::GPIO::Alternate_function::enable<peripherals::GPIO::lsco>(Limi
 
 namespace xmcu::soc {
 #if defined(XMCU_GPIOA_PRESENT)
-template<> class peripheral<st::arm::m4::wb::rm0434::peripherals::GPIO, 1u> : private non_constructible
+template<> class peripheral<st::arm::m4::wb::rm0434::peripherals::GPIO, st::arm::m4::wb::rm0434::peripherals::GPIO::A>
+    : private non_constructible
 {
 public:
     static st::arm::m4::wb::rm0434::peripherals::GPIO create()
@@ -639,9 +646,9 @@ public:
     }
 };
 #endif
-
 #if defined(XMCU_GPIOB_PRESENT)
-template<> class peripheral<st::arm::m4::wb::rm0434::peripherals::GPIO, 2u> : private non_constructible
+template<> class peripheral<st::arm::m4::wb::rm0434::peripherals::GPIO, st::arm::m4::wb::rm0434::peripherals::GPIO::B>
+    : private non_constructible
 {
 public:
     static st::arm::m4::wb::rm0434::peripherals::GPIO create()
@@ -652,9 +659,9 @@ public:
     }
 };
 #endif
-
 #if defined(XMCU_GPIOC_PRESENT)
-template<> class peripheral<st::arm::m4::wb::rm0434::peripherals::GPIO, 3u> : private non_constructible
+template<> class peripheral<st::arm::m4::wb::rm0434::peripherals::GPIO, st::arm::m4::wb::rm0434::peripherals::GPIO::C>
+    : private non_constructible
 {
 public:
     static st::arm::m4::wb::rm0434::peripherals::GPIO create()
@@ -665,9 +672,9 @@ public:
     }
 };
 #endif
-
 #if defined(XMCU_GPIOE_PRESENT)
-template<> class peripheral<st::arm::m4::wb::rm0434::peripherals::GPIO, 5u> : private non_constructible
+template<> class peripheral<st::arm::m4::wb::rm0434::peripherals::GPIO, st::arm::m4::wb::rm0434::peripherals::GPIO::E>
+    : private non_constructible
 {
 public:
     static st::arm::m4::wb::rm0434::peripherals::GPIO create()
@@ -678,9 +685,9 @@ public:
     }
 };
 #endif
-
 #if defined(XMCU_GPIOH_PRESENT)
-template<> class peripheral<st::arm::m4::wb::rm0434::peripherals::GPIO, 8u> : private non_constructible
+template<> class peripheral<st::arm::m4::wb::rm0434::peripherals::GPIO, st::arm::m4::wb::rm0434::peripherals::GPIO::H>
+    : private non_constructible
 {
 public:
     static st::arm::m4::wb::rm0434::peripherals::GPIO create()

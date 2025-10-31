@@ -15,8 +15,8 @@
 #include <rm0434/clocks/sources/lsi.hpp>
 #include <rm0434/rcc.hpp>
 #include <rm0434/system/mcu/mcu.hpp>
-#include <soc/st/arm/IRQ_config.hpp>
 #include <soc/peripheral.hpp>
+#include <soc/st/arm/IRQ_config.hpp>
 #include <xmcu/Duration.hpp>
 #include <xmcu/Non_copyable.hpp>
 #include <xmcu/bit.hpp>
@@ -26,6 +26,9 @@ namespace xmcu::soc::st::arm::m4::wb::rm0434::peripherals {
 class LPTIM : private Non_copyable
 {
 public:
+#if defined(XMCU_LPTIM1_PRESENT)
+
+#endif
     class Tick_counter : private Non_copyable
     {
     public:

@@ -28,6 +28,13 @@
 // USART
 #define XMCU_USART1_PRESENT
 
+// LPUART
+#define XMCU_LPUART1_PRESENT
+
+// DMA
+#define XMCU_DMA1_PRESENT
+#define XMCU_DMA2_PRESENT
+
 // clock sources
 #define XMCU_HSE_PRESENT
 #define XMCU_HSI16_PRESENT
