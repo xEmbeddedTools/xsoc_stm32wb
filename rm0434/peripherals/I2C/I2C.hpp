@@ -16,6 +16,7 @@
 #include <rm0434/clocks/pclk.hpp>
 #include <rm0434/clocks/sources/hsi16.hpp>
 #include <rm0434/clocks/sysclk.hpp>
+#include <rm0434/config.hpp>
 #include <rm0434/peripherals/GPIO/GPIO.hpp>
 #include <rm0434/rcc.hpp>
 #include <rm0434/system/mcu/mcu.hpp>
@@ -26,6 +27,12 @@ namespace xmcu::soc::st::arm::m4::wb::rm0434::peripherals {
 class I2C : private xmcu::Non_copyable
 {
 public:
+#if defined(XMCU_I2C1_PRESENT)
+    enum class _1;
+#endif
+#if defined(XMCU_I2C3_PRESENT)
+    enum class _3;
+#endif
     enum class Transfer_result
     {
         ok,
@@ -105,26 +112,33 @@ protected:
 } // namespace xmcu::soc::st::arm::m4::wb::rm0434::peripherals
 
 namespace xmcu::soc::st::arm::m4::wb::rm0434 {
-template<std::uint32_t id> class rcc<peripherals::I2C, id> : private xmcu::non_constructible
+#if defined(XMCU_I2C1_PRESENT)
+template<> class rcc<peripherals::I2C, peripherals::I2C::_1> : private xmcu::non_constructible
 {
 public:
     template<typename Source_t> static void enable(bool a_enable_in_lp) = delete;
-    static void disable() = delete;
-    static std::uint32_t get_frequency_Hz() = delete;
+    static void disable();
+    static std::uint32_t get_frequency_Hz();
 };
 
-template<> template<> void rcc<peripherals::I2C, 1u>::enable<clocks::pclk<1u>>(bool a_enable_in_lp);
-template<> template<> void rcc<peripherals::I2C, 1u>::enable<clocks::sysclk<1u>>(bool a_enable_in_lp);
-template<> template<> void rcc<peripherals::I2C, 1u>::enable<clocks::sources::hsi16>(bool a_enable_in_lp);
-template<> void rcc<peripherals::I2C, 1u>::disable();
-template<> std::uint32_t rcc<peripherals::I2C, 1u>::get_frequency_Hz();
+template<> void rcc<peripherals::I2C, peripherals::I2C::_1>::enable<clocks::pclk<1u>>(bool a_enable_in_lp);
+template<> void rcc<peripherals::I2C, peripherals::I2C::_1>::enable<clocks::sysclk<1u>>(bool a_enable_in_lp);
+template<> void rcc<peripherals::I2C, peripherals::I2C::_1>::enable<clocks::sources::hsi16>(bool a_enable_in_lp);
+#endif
 
-template<> template<> void rcc<peripherals::I2C, 3u>::enable<clocks::pclk<1u>>(bool a_enable_in_lp);
-template<> template<> void rcc<peripherals::I2C, 3u>::enable<clocks::sysclk<1u>>(bool a_enable_in_lp);
-template<> template<> void rcc<peripherals::I2C, 3u>::enable<clocks::sources::hsi16>(bool a_enable_in_lp);
-template<> void rcc<peripherals::I2C, 3u>::disable();
-template<> std::uint32_t rcc<peripherals::I2C, 3u>::get_frequency_Hz();
+#if defined(XMCU_I2C3_PRESENT)
+template<> class rcc<peripherals::I2C, peripherals::I2C::_3> : private xmcu::non_constructible
+{
+public:
+    template<typename Source_t> static void enable(bool a_enable_in_lp) = delete;
+    static void disable();
+    static std::uint32_t get_frequency_Hz();
+};
 
+template<> void rcc<peripherals::I2C, peripherals::I2C::_3>::enable<clocks::pclk<1u>>(bool a_enable_in_lp);
+template<> void rcc<peripherals::I2C, peripherals::I2C::_3>::enable<clocks::sysclk<1u>>(bool a_enable_in_lp);
+template<> void rcc<peripherals::I2C, peripherals::I2C::_3>::enable<clocks::sources::hsi16>(bool a_enable_in_lp);
+#endif
 } // namespace xmcu::soc::st::arm::m4::wb::rm0434
 
 namespace xmcu::soc::st::arm::m4::wb::rm0434 {
@@ -140,13 +154,15 @@ inline void peripherals::GPIO::Alternate_function::enable<peripherals::I2C, 1u>(
 } // namespace xmcu::soc::st::arm::m4::wb::rm0434
 
 namespace xmcu::soc {
-template<> class peripheral<st::arm::m4::wb::rm0434::peripherals::I2C, 1u> : private xmcu::non_constructible
+template<> class peripheral<st::arm::m4::wb::rm0434::peripherals::I2C, st::arm::m4::wb::rm0434::peripherals::I2C::_1>
+    : private xmcu::non_constructible
 {
 public:
     static st::arm::m4::wb::rm0434::peripherals::I2C create()
     {
         std::uint32_t (*fun)() =
-            st::arm::m4::wb::rm0434::rcc<st::arm::m4::wb::rm0434::peripherals::I2C, 1u>::get_frequency_Hz;
+            st::arm::m4::wb::rm0434::rcc<st::arm::m4::wb::rm0434::peripherals::I2C,
+                                         st::arm::m4::wb::rm0434::peripherals::I2C::_1>::get_frequency_Hz;
         return st::arm::m4::wb::rm0434::peripherals::I2C(I2C1, fun);
     }
 };

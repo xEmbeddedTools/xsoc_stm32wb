@@ -20,5 +20,9 @@ struct usart_base : private non_constructible
 {
     enum class _1 : std::uint32_t;
 };
+struct lpuart_base : private non_constructible
+{
+    enum class _1 : std::uint32_t;
+};
 #endif
 } // namespace xmcu::soc::st::arm::m4::wb::rm0434::peripherals::ll

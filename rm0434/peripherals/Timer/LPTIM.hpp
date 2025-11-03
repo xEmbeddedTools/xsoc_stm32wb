@@ -15,8 +15,8 @@
 #include <rm0434/clocks/sources/lsi.hpp>
 #include <rm0434/rcc.hpp>
 #include <rm0434/system/mcu/mcu.hpp>
-#include <soc/st/arm/IRQ_config.hpp>
 #include <soc/peripheral.hpp>
+#include <soc/st/arm/IRQ_config.hpp>
 #include <xmcu/Duration.hpp>
 #include <xmcu/Non_copyable.hpp>
 #include <xmcu/bit.hpp>
@@ -26,6 +26,13 @@ namespace xmcu::soc::st::arm::m4::wb::rm0434::peripherals {
 class LPTIM : private Non_copyable
 {
 public:
+#if defined(XMCU_LPTIM1_PRESENT)
+    enum class _1;
+#endif
+#if defined(XMCU_LPTIM2_PRESENT)
+    enum class _2;
+#endif
+
     class Tick_counter : private Non_copyable
     {
     public:
@@ -160,26 +167,39 @@ void LPTIM_interrupt_handler(LPTIM* a_p_this);
 } // namespace xmcu::soc::st::arm::m4::wb::rm0434::peripherals
 
 namespace xmcu::soc::st::arm::m4::wb::rm0434 {
-template<std::uint32_t id> class rcc<peripherals::LPTIM, id> : private non_constructible
+#if defined(XMCU_LPTIM1_PRESENT)
+template<> class rcc<peripherals::LPTIM, peripherals::LPTIM::_1> : private non_constructible
 {
 public:
     template<typename Source_t> static void enable(bool a_enable_in_lp) = delete;
-    static void disable() = delete;
+    static void disable();
 };
 
-template<> template<> void rcc<peripherals::LPTIM, 1>::enable<clocks::pclk<1u>>(bool a_enable_in_lp);
-template<> template<> void rcc<peripherals::LPTIM, 1>::enable<clocks::sources::lsi>(bool a_enable_in_lp);
-template<> template<> void rcc<peripherals::LPTIM, 1>::enable<clocks::sources::hsi16>(bool a_enable_in_lp);
-template<> template<> void rcc<peripherals::LPTIM, 1>::enable<clocks::sources::lse>(bool a_enable_in_lp);
+template<> void rcc<peripherals::LPTIM, peripherals::LPTIM::_1>::enable<clocks::pclk<1u>>(bool a_enable_in_lp);
+template<> void rcc<peripherals::LPTIM, peripherals::LPTIM::_1>::enable<clocks::sources::lsi>(bool a_enable_in_lp);
+template<> void rcc<peripherals::LPTIM, peripherals::LPTIM::_1>::enable<clocks::sources::hsi16>(bool a_enable_in_lp);
+template<> void rcc<peripherals::LPTIM, peripherals::LPTIM::_1>::enable<clocks::sources::lse>(bool a_enable_in_lp);
+#endif
+#if defined(XMCU_LPTIM2_PRESENT)
+template<> class rcc<peripherals::LPTIM, peripherals::LPTIM::_2> : private non_constructible
+{
+public:
+    template<typename Source_t> static void enable(bool a_enable_in_lp) = delete;
+    static void disable();
+};
 
-template<> template<> void rcc<peripherals::LPTIM, 2>::enable<clocks::pclk<1u>>(bool a_enable_in_lp);
-template<> template<> void rcc<peripherals::LPTIM, 2>::enable<clocks::sources::lsi>(bool a_enable_in_lp);
-template<> template<> void rcc<peripherals::LPTIM, 2>::enable<clocks::sources::hsi16>(bool a_enable_in_lp);
-template<> template<> void rcc<peripherals::LPTIM, 2>::enable<clocks::sources::lse>(bool a_enable_in_lp);
+template<> void rcc<peripherals::LPTIM, peripherals::LPTIM::_2>::enable<clocks::pclk<1u>>(bool a_enable_in_lp);
+template<> void rcc<peripherals::LPTIM, peripherals::LPTIM::_2>::enable<clocks::sources::lsi>(bool a_enable_in_lp);
+template<> void rcc<peripherals::LPTIM, peripherals::LPTIM::_2>::enable<clocks::sources::hsi16>(bool a_enable_in_lp);
+template<> void rcc<peripherals::LPTIM, peripherals::LPTIM::_2>::enable<clocks::sources::lse>(bool a_enable_in_lp);
+#endif
 } // namespace xmcu::soc::st::arm::m4::wb::rm0434
 
 namespace xmcu::soc {
-template<> class peripheral<st::arm::m4::wb::rm0434::peripherals::LPTIM, 1u> : private non_constructible
+#if defined(XMCU_LPTIM1_PRESENT)
+template<>
+class peripheral<st::arm::m4::wb::rm0434::peripherals::LPTIM, st::arm::m4::wb::rm0434::peripherals::LPTIM::_1>
+    : private non_constructible
 {
 public:
     static st::arm::m4::wb::rm0434::peripherals::LPTIM create()
@@ -187,8 +207,11 @@ public:
         return st::arm::m4::wb::rm0434::peripherals::LPTIM(0u, LPTIM1, IRQn_Type::LPTIM1_IRQn);
     }
 };
-
-template<> class peripheral<st::arm::m4::wb::rm0434::peripherals::LPTIM, 2u> : private non_constructible
+#endif
+#if defined(XMCU_LPTIM2_PRESENT)
+template<>
+class peripheral<st::arm::m4::wb::rm0434::peripherals::LPTIM, st::arm::m4::wb::rm0434::peripherals::LPTIM::_2>
+    : private non_constructible
 {
 public:
     static st::arm::m4::wb::rm0434::peripherals::LPTIM create()
@@ -196,4 +219,5 @@ public:
         return st::arm::m4::wb::rm0434::peripherals::LPTIM(1u, LPTIM2, IRQn_Type::LPTIM2_IRQn);
     }
 };
+#endif
 } // namespace xmcu::soc

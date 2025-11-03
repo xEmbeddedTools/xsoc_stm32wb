@@ -19,6 +19,9 @@ namespace xmcu::soc::st::arm::m4::wb::rm0434::peripherals {
 class LPUART : private Non_copyable
 {
 public:
+#if defined(XMCU_LPUART1_PRESENT)
+    using _1 = ll::lpuart_base::_1;
+#endif
     using Event_flag = USART::Event_flag;
     using Low_power_wakeup_method = USART::Low_power_wakeup_method;
     using Clock_config = USART::Clock_config;
@@ -406,17 +409,19 @@ operator|(LPUART::Transceiving_config::RS232_flow_control_flag a_f1,
 } // namespace xmcu::soc::st::arm::m4::wb::rm0434::peripherals
 
 namespace xmcu::soc::st::arm::m4::wb::rm0434 {
-template<std::uint32_t id> class rcc<peripherals::LPUART, id> : private non_constructible
+#if defined(XMCU_LPUART1_PRESENT)
+template<> class rcc<peripherals::LPUART, peripherals::LPUART::_1> : private non_constructible
 {
 public:
     template<typename Source_t> static void enable(bool a_enable_in_lp) = delete;
-    static void disable() = delete;
+    static void disable();
 };
-template<> template<> void rcc<peripherals::LPUART, 1u>::enable<clocks::pclk<1u>>(bool a_enable_in_lp);
-template<> template<> void rcc<peripherals::LPUART, 1u>::enable<rcc<system::mcu<1u>>>(bool a_enable_in_lp);
-template<> template<> void rcc<peripherals::LPUART, 1u>::enable<clocks::sources::hsi16>(bool a_enable_in_lp);
-template<> template<> void rcc<peripherals::LPUART, 1u>::enable<clocks::sources::lse>(bool a_enable_in_lp);
-template<> void rcc<peripherals::LPUART, 1u>::disable();
+
+template<> void rcc<peripherals::LPUART, peripherals::LPUART::_1>::enable<clocks::pclk<1u>>(bool a_enable_in_lp);
+template<> void rcc<peripherals::LPUART, peripherals::LPUART::_1>::enable<rcc<system::mcu<1u>>>(bool a_enable_in_lp);
+template<> void rcc<peripherals::LPUART, peripherals::LPUART::_1>::enable<clocks::sources::hsi16>(bool a_enable_in_lp);
+template<> void rcc<peripherals::LPUART, peripherals::LPUART::_1>::enable<clocks::sources::lse>(bool a_enable_in_lp);
+#endif
 
 template<>
 inline void peripherals::GPIO::Alternate_function::enable<peripherals::LPUART, 1>(Limited<std::uint32_t, 0, 15> a_id,
@@ -424,8 +429,8 @@ inline void peripherals::GPIO::Alternate_function::enable<peripherals::LPUART, 1
                                                                                   Pin* a_p_pin)
 {
 #if defined(STM32WB35xx)
-    hkm_assert((0u == this->p_port->idx && (2u == a_id || 3u == a_id || 12u == a_id)) ||               // PORTA
-               (1u == this->p_port->idx && (5u == a_id || 1u == a_id)));                               // PORTB
+    hkm_assert((0u == this->p_port->idx && (2u == a_id || 3u == a_id || 12u == a_id)) || // PORTA
+               (1u == this->p_port->idx && (5u == a_id || 1u == a_id)));                 // PORTB
 #elif defined(STM32WB55xx)
     hkm_assert(
         (0u == this->p_port->idx && (2u == a_id || 3u == a_id || 12u == a_id)) ||                               // PORTA
@@ -439,7 +444,9 @@ inline void peripherals::GPIO::Alternate_function::enable<peripherals::LPUART, 1
 } // namespace xmcu::soc::st::arm::m4::wb::rm0434
 
 namespace xmcu::soc {
-template<> class peripheral<st::arm::m4::wb::rm0434::peripherals::LPUART, 1u> : private non_constructible
+template<>
+class peripheral<st::arm::m4::wb::rm0434::peripherals::LPUART, st::arm::m4::wb::rm0434::peripherals::LPUART::_1>
+    : private non_constructible
 {
 public:
     static st::arm::m4::wb::rm0434::peripherals::LPUART create()

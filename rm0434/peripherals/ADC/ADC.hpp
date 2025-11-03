@@ -17,6 +17,7 @@
 #include <rm0434/clocks/hclk.hpp>
 #include <rm0434/clocks/sources/lse.hpp>
 #include <rm0434/clocks/sources/pll.hpp>
+#include <rm0434/config.hpp>
 #include <rm0434/rcc.hpp>
 #include <rm0434/system/mcu/mcu.hpp>
 #include <soc/peripheral.hpp>
@@ -329,7 +330,7 @@ template<> void rcc<peripherals::ADC>::sync::enable<clocks::hclk<1u>>(Prescaler 
 } // namespace xmcu::soc::st::arm::m4::wb::rm0434
 
 namespace xmcu::soc {
-template<> class peripheral<st::arm::m4::wb::rm0434::peripherals::ADC, 1u> : private non_constructible
+template<> class peripheral<st::arm::m4::wb::rm0434::peripherals::ADC> : private non_constructible
 {
 public:
     static st::arm::m4::wb::rm0434::peripherals::ADC create()

@@ -14,8 +14,7 @@
 #include <xmcu/non_constructible.hpp>
 
 namespace xmcu::soc::st::arm::m4::wb::rm0434 {
-template<typename Periph_t, std::uint32_t id = std::numeric_limits<std::uint32_t>::max()> class rcc
-    : private xmcu::non_constructible
+template<typename Periph_t, typename Id = void> class rcc : private xmcu::non_constructible
 {
 };
 } // namespace xmcu::soc::st::arm::m4::wb::rm0434

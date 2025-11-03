@@ -34,6 +34,10 @@ namespace xmcu::soc::st::arm::m4::wb::rm0434::peripherals {
 class USART : private Non_copyable
 {
 public:
+#if defined(XMCU_USART1_PRESENT)
+    using _1 = ll::usart_base::_1;
+#endif
+
     enum class Event_flag : std::uint32_t
     {
         none = 0x0u,
@@ -522,18 +526,18 @@ constexpr USART::Event_flag operator|=(USART::Event_flag& a_f1, USART::Event_fla
 } // namespace xmcu::soc::st::arm::m4::wb::rm0434::peripherals
 
 namespace xmcu::soc::st::arm::m4::wb::rm0434 {
-template<std::uint32_t id> class rcc<peripherals::USART, id> : private non_constructible
+#if defined(XMCU_USART1_PRESENT)
+template<> class rcc<peripherals::USART, peripherals::USART::_1> : private non_constructible
 {
 public:
     template<typename Source_t> static void enable(bool a_enable_in_lp) = delete;
-    static void disable() = delete;
+    static void disable();
 };
-template<> template<> void rcc<peripherals::USART, 1u>::enable<clocks::pclk<2u>>(bool a_enable_in_lp);
-template<> template<> void rcc<peripherals::USART, 1u>::enable<rcc<system::mcu<1u>>>(bool a_enable_in_lp);
-template<> template<> void rcc<peripherals::USART, 1u>::enable<clocks::sources::hsi16>(bool a_enable_in_lp);
-template<> template<> void rcc<peripherals::USART, 1u>::enable<clocks::sources::lse>(bool a_enable_in_lp);
-template<> void rcc<peripherals::USART, 1u>::disable();
-
+template<> void rcc<peripherals::USART, peripherals::USART::_1>::enable<clocks::pclk<2u>>(bool a_enable_in_lp);
+template<> void rcc<peripherals::USART, peripherals::USART::_1>::enable<rcc<system::mcu<1u>>>(bool a_enable_in_lp);
+template<> void rcc<peripherals::USART, peripherals::USART::_1>::enable<clocks::sources::hsi16>(bool a_enable_in_lp);
+template<> void rcc<peripherals::USART, peripherals::USART::_1>::enable<clocks::sources::lse>(bool a_enable_in_lp);
+#endif
 template<>
 inline void peripherals::GPIO::Alternate_function::enable<peripherals::USART, 1>(Limited<std::uint32_t, 0, 15> a_id,
                                                                                  const Enable_config& a_config,
@@ -551,7 +555,9 @@ inline void peripherals::GPIO::Alternate_function::enable<peripherals::USART, 1>
 } // namespace xmcu::soc::st::arm::m4::wb::rm0434
 
 namespace xmcu::soc {
-template<> class peripheral<st::arm::m4::wb::rm0434::peripherals::USART, 1u> : private xmcu::non_constructible
+template<>
+class peripheral<st::arm::m4::wb::rm0434::peripherals::USART, st::arm::m4::wb::rm0434::peripherals::USART::_1>
+    : private xmcu::non_constructible
 {
 public:
     static st::arm::m4::wb::rm0434::peripherals::USART create()
