@@ -37,18 +37,32 @@ public:
     {
         enum class Level : std::uint32_t
         {
-            _1_7V = 0x0u,
-            _2_0V = FLASH_OPTR_BOR_LEV_0,
-            _2_2V = FLASH_OPTR_BOR_LEV_1,
-            _2_5V = FLASH_OPTR_BOR_LEV_0 | FLASH_OPTR_BOR_LEV_1,
-            _2_8V = FLASH_OPTR_BOR_LEV_2
+            _0 = 0x0u,
+            _1 = FLASH_OPTR_BOR_LEV_0,
+            _2 = FLASH_OPTR_BOR_LEV_1,
+            _3 = FLASH_OPTR_BOR_LEV_0 | FLASH_OPTR_BOR_LEV_1,
+            _4 = FLASH_OPTR_BOR_LEV_2
         };
 
         static bool set(Level a_level);
-
-        static Level get_level();
-        static std::uint16_t get_mV();
+        static Level get();
     };
+
+    struct RDP : private non_constructible
+    {
+        enum class Level : std::uint32_t
+        {
+            _0 = 0xAAu,
+            _1 = 0xBBu,
+            _2 = 0xCCu
+        };
+
+        static bool set(Level level_a);
+        static Level get();
+    };
+
+    static bool launch();
+    static bool launch(xmcu::Milliseconds timeout_a);
 };
 
 } // namespace xmcu::soc::st::arm::m4::wb::rm0434::peripherals
