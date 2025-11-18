@@ -60,7 +60,7 @@ void option_bytes::unlocker::lock()
 std::uint32_t option_bytes::secure_flash::get_start_address()
 {
     Scoped_guard<internal_flash::unlocker> flash_guard;
-    Scoped_guard<unlocker> ob_guard;
+    Scoped_guard<option_bytes::unlocker> ob_guard;
 
     return bit::flag::get(FLASH->SFR, FLASH_SFR_SFSA) * internal_flash::s::page_size_in_bytes +
            internal_flash::s::start;
@@ -68,7 +68,6 @@ std::uint32_t option_bytes::secure_flash::get_start_address()
 std::uint32_t option_bytes::secure_flash::get_start_address(Milliseconds a_timeout)
 {
     const std::uint64_t start = tick_counter<Milliseconds>::get();
-
     Scoped_guard<internal_flash::unlocker> flash_guard(a_timeout.get() - (tick_counter<Milliseconds>::get() - start));
 
     if (true == flash_guard.is_unlocked())
@@ -86,7 +85,6 @@ std::uint32_t option_bytes::secure_flash::get_start_address(Milliseconds a_timeo
 
 bool option_bytes::BOR::set(Level a_level)
 {
-    Scoped_guard<hsem::_1_step> sem2_guard(0x2u);
     Scoped_guard<internal_flash::unlocker> flash_guard;
 
     if (true == flash_guard.is_unlocked())
@@ -96,16 +94,25 @@ bool option_bytes::BOR::set(Level a_level)
         if (true == ob_guard.is_unlocked())
         {
             bit::flag::set(&(FLASH->OPTR), FLASH_OPTR_BOR_LEV, (static_cast<std::uint32_t>(a_level)));
+            return true;
+        }
+    }
 
-            bit::flag::set(&(FLASH->CR), FLASH_CR_OPTSTRT);
-            wait_until::all_bits_are_cleared(FLASH->SR, FLASH_SR_BSY);
+    return false;
+}
+bool option_bytes::BOR::set(Level level_a, Milliseconds timeout_a)
+{
+    const std::uint64_t start = tick_counter<Milliseconds>::get();
+    Scoped_guard<internal_flash::unlocker> flash_guard(timeout_a.get() - (tick_counter<Milliseconds>::get() - start));
 
-            if (false == bit::flag::is(FLASH->SR, FLASH_SR_PESD))
-            {
-                bit::flag::set(&(FLASH->CR), FLASH_CR_OBL_LAUNCH);
+    if (true == flash_guard.is_unlocked())
+    {
+        Scoped_guard<option_bytes::unlocker> ob_guard(timeout_a.get() - (tick_counter<Milliseconds>::get() - start));
 
-                return true;
-            }
+        if (true == ob_guard.is_unlocked())
+        {
+            bit::flag::set(&(FLASH->OPTR), FLASH_OPTR_BOR_LEV, (static_cast<std::uint32_t>(level_a)));
+            return true;
         }
     }
 
@@ -114,9 +121,115 @@ bool option_bytes::BOR::set(Level a_level)
 
 option_bytes::BOR::Level option_bytes::BOR::get()
 {
-    Scoped_guard<hsem::_1_step> sem2_guard(0x2u);
-    Scoped_guard<internal_flash::unlocker> flash_guard;
-
     return static_cast<Level>(bit::flag::get(FLASH->OPTR, FLASH_OPTR_BOR_LEV));
 }
+
+bool option_bytes::RDP::set(option_bytes::RDP::Level level_a)
+{
+    Scoped_guard<internal_flash::unlocker> flash_guard;
+
+    if (true == flash_guard.is_unlocked())
+    {
+        Scoped_guard<option_bytes::unlocker> ob_guard;
+
+        if (true == ob_guard.is_unlocked())
+        {
+            bit::flag::set(&(FLASH->OPTR), static_cast<std::uint32_t>(level_a));
+            return true;
+        }
+    }
+
+    return false;
+}
+bool option_bytes::RDP::set(option_bytes::RDP::Level level_a, Milliseconds timeout_a)
+{
+    const std::uint64_t start = tick_counter<Milliseconds>::get();
+    Scoped_guard<internal_flash::unlocker> flash_guard(timeout_a.get() - (tick_counter<Milliseconds>::get() - start));
+
+    if (true == flash_guard.is_unlocked())
+    {
+        Scoped_guard<option_bytes::unlocker> ob_guard(timeout_a.get() - (tick_counter<Milliseconds>::get() - start));
+
+        if (true == ob_guard.is_unlocked())
+        {
+            bit::flag::set(&(FLASH->OPTR), static_cast<std::uint32_t>(level_a));
+            return true;
+        }
+    }
+
+    return false;
+}
+
+option_bytes::RDP::Level option_bytes::RDP::get()
+{
+    std::uint32_t v = bit::flag::get(FLASH->OPTR, FLASH_OPTR_RDP);
+
+    switch (v)
+    {
+        case 0xAAu:
+            return Level::_0;
+        case 0xCCu:
+            return Level::_2;
+    }
+
+    return Level::_1;
+}
+
+bool option_bytes::launch()
+{
+    Scoped_guard<internal_flash::unlocker> flash_guard;
+
+    if (true == flash_guard.is_unlocked())
+    {
+        Scoped_guard<option_bytes::unlocker> ob_guard;
+
+        if (true == ob_guard.is_unlocked())
+        {
+            wait_until::all_bits_are_cleared(FLASH->SR, FLASH_SR_CFGBSY);
+            bit::flag::set(&(FLASH->CR), FLASH_CR_OPTSTRT);
+
+            wait_until::all_bits_are_cleared(FLASH->SR, FLASH_SR_BSY);
+
+            if (false == bit::flag::is(FLASH->SR, FLASH_SR_PESD))
+            {
+                bit::flag::set(&(FLASH->CR), FLASH_CR_OBL_LAUNCH);
+                return false; // we should never get to this point
+            }
+        }
+    }
+
+    return false;
+}
+bool option_bytes::launch(Milliseconds timeout_a)
+{
+    const std::uint64_t start = tick_counter<Milliseconds>::get();
+    Scoped_guard<internal_flash::unlocker> flash_guard(timeout_a.get() - (tick_counter<Milliseconds>::get() - start));
+
+    if (true == flash_guard.is_unlocked())
+    {
+        Scoped_guard<option_bytes::unlocker> ob_guard(timeout_a.get() - (tick_counter<Milliseconds>::get() - start));
+
+        if (true == ob_guard.is_unlocked())
+        {
+            if (true == wait_until::all_bits_are_cleared(
+                            FLASH->SR, FLASH_SR_CFGBSY, timeout_a.get() - (tick_counter<Milliseconds>::get() - start)))
+            {
+                bit::flag::set(&(FLASH->CR), FLASH_CR_OPTSTRT);
+
+                if (true == wait_until::all_bits_are_cleared(
+                                FLASH->SR, FLASH_SR_BSY, timeout_a.get() - (tick_counter<Milliseconds>::get() - start)))
+                {
+                    if (false == bit::flag::is(FLASH->SR, FLASH_SR_PESD))
+                    {
+                        bit::flag::set(&(FLASH->CR), FLASH_CR_OBL_LAUNCH);
+                        return false; // we should never get to this point
+                    }
+                }
+            }
+        }
+    }
+
+    return false;
+}
+
 } // namespace xmcu::soc::st::arm::m4::wb::rm0434::peripherals

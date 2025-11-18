@@ -44,7 +44,10 @@ public:
             _4 = FLASH_OPTR_BOR_LEV_2
         };
 
+        using enum Level;
+
         static bool set(Level a_level);
+        static bool set(Level level_a, xmcu::Milliseconds timeout_a);
         static Level get();
     };
 
@@ -57,7 +60,10 @@ public:
             _2 = 0xCCu
         };
 
+        using enum Level;
+
         static bool set(Level level_a);
+        static bool set(Level level_a, xmcu::Milliseconds timeout_a);
         static Level get();
     };
 
