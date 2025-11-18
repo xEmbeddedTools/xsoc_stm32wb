@@ -70,7 +70,6 @@ public:
     static bool launch();
     static bool launch(xmcu::Milliseconds timeout_a);
 };
-
 } // namespace xmcu::soc::st::arm::m4::wb::rm0434::peripherals
 
 namespace xmcu::soc {
