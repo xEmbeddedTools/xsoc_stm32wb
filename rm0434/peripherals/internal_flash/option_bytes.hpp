@@ -27,12 +27,6 @@ public:
         static void lock();
     };
 
-    struct secure_flash : private non_constructible
-    {
-        static std::uint32_t get_start_address();
-        static std::uint32_t get_start_address(Milliseconds a_timeout);
-    };
-
     struct BOR : private non_constructible
     {
         enum class Level : std::uint32_t

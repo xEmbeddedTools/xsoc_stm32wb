@@ -57,32 +57,6 @@ void option_bytes::unlocker::lock()
     bit::flag::set(&(FLASH->CR), FLASH_CR_OPTLOCK);
 }
 
-std::uint32_t option_bytes::secure_flash::get_start_address()
-{
-    Scoped_guard<internal_flash::unlocker> flash_guard;
-    Scoped_guard<option_bytes::unlocker> ob_guard;
-
-    return bit::flag::get(FLASH->SFR, FLASH_SFR_SFSA) * internal_flash::s::page_size_in_bytes +
-           internal_flash::s::start;
-}
-std::uint32_t option_bytes::secure_flash::get_start_address(Milliseconds a_timeout)
-{
-    const std::uint64_t start = tick_counter<Milliseconds>::get();
-    Scoped_guard<internal_flash::unlocker> flash_guard(a_timeout.get() - (tick_counter<Milliseconds>::get() - start));
-
-    if (true == flash_guard.is_unlocked())
-    {
-        Scoped_guard<unlocker> ob_guard(a_timeout.get() - (tick_counter<Milliseconds>::get() - start));
-
-        if (true == ob_guard.is_unlocked())
-        {
-            return bit::flag::get(FLASH->SFR, FLASH_SFR_SFSA);
-        }
-    }
-
-    return 0x0u;
-}
-
 bool option_bytes::BOR::set(Level a_level)
 {
     Scoped_guard<internal_flash::unlocker> flash_guard;
@@ -124,7 +98,7 @@ option_bytes::BOR::Level option_bytes::BOR::get()
     return static_cast<Level>(bit::flag::get(FLASH->OPTR, FLASH_OPTR_BOR_LEV));
 }
 
-bool option_bytes::RDP::set(option_bytes::RDP::Level level_a)
+bool option_bytes::RDP::set(Level level_a)
 {
     Scoped_guard<internal_flash::unlocker> flash_guard;
 
@@ -134,14 +108,14 @@ bool option_bytes::RDP::set(option_bytes::RDP::Level level_a)
 
         if (true == ob_guard.is_unlocked())
         {
-            bit::flag::set(&(FLASH->OPTR), static_cast<std::uint32_t>(level_a));
+            bit::flag::set(&(FLASH->OPTR), FLASH_OPTR_RDP, static_cast<std::uint32_t>(level_a));
             return true;
         }
     }
 
     return false;
 }
-bool option_bytes::RDP::set(option_bytes::RDP::Level level_a, Milliseconds timeout_a)
+bool option_bytes::RDP::set(Level level_a, Milliseconds timeout_a)
 {
     const std::uint64_t start = tick_counter<Milliseconds>::get();
     Scoped_guard<internal_flash::unlocker> flash_guard(timeout_a.get() - (tick_counter<Milliseconds>::get() - start));
@@ -152,7 +126,7 @@ bool option_bytes::RDP::set(option_bytes::RDP::Level level_a, Milliseconds timeo
 
         if (true == ob_guard.is_unlocked())
         {
-            bit::flag::set(&(FLASH->OPTR), static_cast<std::uint32_t>(level_a));
+            bit::flag::set(&(FLASH->OPTR), FLASH_OPTR_RDP, static_cast<std::uint32_t>(level_a));
             return true;
         }
     }
@@ -162,9 +136,9 @@ bool option_bytes::RDP::set(option_bytes::RDP::Level level_a, Milliseconds timeo
 
 option_bytes::RDP::Level option_bytes::RDP::get()
 {
-    std::uint32_t v = bit::flag::get(FLASH->OPTR, FLASH_OPTR_RDP);
+    std::uint32_t reg_val = bit::flag::get(FLASH->OPTR, FLASH_OPTR_RDP);
 
-    switch (v)
+    switch (reg_val)
     {
         case 0xAAu:
             return Level::_0;
