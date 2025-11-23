@@ -151,23 +151,45 @@ option_bytes::RDP::Level option_bytes::RDP::get()
 
 bool option_bytes::launch()
 {
-    Scoped_guard<internal_flash::unlocker> flash_guard;
+    Scoped_guard<hsem::_1_step> sem2_guard(0x2u);
 
-    if (true == flash_guard.is_unlocked())
+    if (true == sem2_guard.is_locked())
     {
-        Scoped_guard<option_bytes::unlocker> ob_guard;
+        Scoped_guard<internal_flash::unlocker> flash_guard;
 
-        if (true == ob_guard.is_unlocked())
+        if (true == flash_guard.is_unlocked())
         {
-            wait_until::all_bits_are_cleared(FLASH->SR, FLASH_SR_CFGBSY);
-            bit::flag::set(&(FLASH->CR), FLASH_CR_OPTSTRT);
+            Scoped_guard<option_bytes::unlocker> ob_guard;
 
-            wait_until::all_bits_are_cleared(FLASH->SR, FLASH_SR_BSY);
-
-            if (false == bit::flag::is(FLASH->SR, FLASH_SR_PESD))
+            if (true == ob_guard.is_unlocked())
             {
-                bit::flag::set(&(FLASH->CR), FLASH_CR_OBL_LAUNCH);
-                return false; // we should never get to this point
+                bool repeat = false;
+
+                do
+                {
+                    wait_until::all_bits_are_cleared(FLASH->SR, FLASH_SR_PESD);
+
+                    Scoped_guard<nvic> interrupt_guard;
+
+                    if (false == hsem::is_locked(0x6u) && true == hsem::_1_step::try_lock(0x7u))
+                    {
+                        wait_until::all_bits_are_cleared(FLASH->SR, FLASH_SR_CFGBSY);
+                        bit::flag::set(&(FLASH->CR), FLASH_CR_OPTSTRT);
+
+                        wait_until::all_bits_are_cleared(FLASH->SR, FLASH_SR_BSY);
+
+                        bit::flag::set(&(FLASH->CR), FLASH_CR_OBL_LAUNCH);
+
+                        // we should never get to this point
+                        hsem::_1_step::unlock(0x7u);
+                        return false;
+                    }
+                    else
+                    {
+                        repeat = true;
+                    }
+
+                } while (true == repeat);
             }
         }
     }
@@ -177,33 +199,64 @@ bool option_bytes::launch()
 bool option_bytes::launch(Milliseconds timeout_a)
 {
     const std::uint64_t start = tick_counter<Milliseconds>::get();
-    Scoped_guard<internal_flash::unlocker> flash_guard(timeout_a.get() - (tick_counter<Milliseconds>::get() - start));
 
-    if (true == flash_guard.is_unlocked())
+    Scoped_guard<hsem::_1_step> sem2_guard(0x2u, timeout_a.get() - (tick_counter<Milliseconds>::get() - start));
+
+    if (true == sem2_guard.is_locked())
     {
-        Scoped_guard<option_bytes::unlocker> ob_guard(timeout_a.get() - (tick_counter<Milliseconds>::get() - start));
+        Scoped_guard<internal_flash::unlocker> flash_guard(timeout_a.get() -
+                                                           (tick_counter<Milliseconds>::get() - start));
 
-        if (true == ob_guard.is_unlocked())
+        if (true == flash_guard.is_unlocked())
         {
-            if (true == wait_until::all_bits_are_cleared(
-                            FLASH->SR, FLASH_SR_CFGBSY, timeout_a.get() - (tick_counter<Milliseconds>::get() - start)))
-            {
-                bit::flag::set(&(FLASH->CR), FLASH_CR_OPTSTRT);
+            Scoped_guard<option_bytes::unlocker> ob_guard(timeout_a.get() -
+                                                          (tick_counter<Milliseconds>::get() - start));
 
-                if (true == wait_until::all_bits_are_cleared(
-                                FLASH->SR, FLASH_SR_BSY, timeout_a.get() - (tick_counter<Milliseconds>::get() - start)))
+            if (true == ob_guard.is_unlocked())
+            {
+                bool repeat = false;
+
+                do
                 {
-                    if (false == bit::flag::is(FLASH->SR, FLASH_SR_PESD))
+                    if (true ==
+                        wait_until::all_bits_are_cleared(
+                            FLASH->SR, FLASH_SR_PESD, timeout_a.get() - (tick_counter<Milliseconds>::get() - start)))
                     {
-                        bit::flag::set(&(FLASH->CR), FLASH_CR_OBL_LAUNCH);
-                        return false; // we should never get to this point
+                        Scoped_guard<nvic> interrupt_guard;
+
+                        if (false == hsem::is_locked(0x6u) && true == hsem::_1_step::try_lock(0x7u))
+                        {
+                            if (true == wait_until::all_bits_are_cleared(
+                                            FLASH->SR,
+                                            FLASH_SR_CFGBSY,
+                                            timeout_a.get() - (tick_counter<Milliseconds>::get() - start)))
+                            {
+                                bit::flag::set(&(FLASH->CR), FLASH_CR_OPTSTRT);
+
+                                if (true == wait_until::all_bits_are_cleared(
+                                                FLASH->SR,
+                                                FLASH_SR_BSY,
+                                                timeout_a.get() - (tick_counter<Milliseconds>::get() - start)))
+                                {
+                                    bit::flag::set(&(FLASH->CR), FLASH_CR_OBL_LAUNCH);
+
+                                    // we should never get to this point
+                                    hsem::_1_step::unlock(0x7u);
+                                    return false;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            repeat = true;
+                        }
                     }
-                }
+
+                } while (true == repeat && (timeout_a.get() - (tick_counter<Milliseconds>::get() - start)));
             }
         }
     }
 
     return false;
 }
-
 } // namespace xmcu::soc::st::arm::m4::wb::rm0434::peripherals
