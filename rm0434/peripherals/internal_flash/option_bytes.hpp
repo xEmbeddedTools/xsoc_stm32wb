@@ -40,7 +40,7 @@ public:
 
         using enum Level;
 
-        static bool set(Level a_level);
+        static void set(Level a_level);
         static bool set(Level level_a, xmcu::Milliseconds timeout_a);
         static Level get();
     };
@@ -56,7 +56,7 @@ public:
 
         using enum Level;
 
-        static bool set(Level level_a);
+        static void set(Level level_a);
         static bool set(Level level_a, xmcu::Milliseconds timeout_a);
         static Level get();
     };
