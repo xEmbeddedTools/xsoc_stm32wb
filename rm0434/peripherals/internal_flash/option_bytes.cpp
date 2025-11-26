@@ -57,91 +57,162 @@ void option_bytes::unlocker::lock()
     bit::flag::set(&(FLASH->CR), FLASH_CR_OPTLOCK);
 }
 
-std::uint32_t option_bytes::secure_flash::get_start_address()
+void option_bytes::BOR::set(Level a_level)
 {
     Scoped_guard<internal_flash::unlocker> flash_guard;
-    Scoped_guard<unlocker> ob_guard;
+    Scoped_guard<option_bytes::unlocker> ob_guard;
 
-    return bit::flag::get(FLASH->SFR, FLASH_SFR_SFSA) * internal_flash::s::page_size_in_bytes +
-           internal_flash::s::start;
+    bit::flag::set(&(FLASH->OPTR), FLASH_OPTR_BOR_LEV, (static_cast<std::uint32_t>(a_level)));
 }
-std::uint32_t option_bytes::secure_flash::get_start_address(Milliseconds a_timeout)
+bool option_bytes::BOR::set(Level level_a, Milliseconds timeout_a)
 {
-    const std::uint64_t start = tick_counter<Milliseconds>::get();
-
-    Scoped_guard<internal_flash::unlocker> flash_guard(a_timeout.get() - (tick_counter<Milliseconds>::get() - start));
+    const std::uint64_t timeout_timestamp = tick_counter<Milliseconds>::get() + timeout_a.get();
+    Scoped_guard<internal_flash::unlocker> flash_guard(timeout_timestamp - tick_counter<Milliseconds>::get());
 
     if (true == flash_guard.is_unlocked())
     {
-        Scoped_guard<unlocker> ob_guard(a_timeout.get() - (tick_counter<Milliseconds>::get() - start));
+        Scoped_guard<option_bytes::unlocker> ob_guard(timeout_timestamp - tick_counter<Milliseconds>::get());
 
         if (true == ob_guard.is_unlocked())
         {
-            return bit::flag::get(FLASH->SFR, FLASH_SFR_SFSA);
-        }
-    }
-
-    return 0x0u;
-}
-
-bool option_bytes::BOR::set(Level a_level)
-{
-    Scoped_guard<hsem::_1_step> sem2_guard(0x2u);
-    Scoped_guard<internal_flash::unlocker> flash_guard;
-
-    if (true == flash_guard.is_unlocked())
-    {
-        Scoped_guard<option_bytes::unlocker> ob_guard;
-
-        if (true == ob_guard.is_unlocked())
-        {
-            bit::flag::set(&(FLASH->OPTR), FLASH_OPTR_BOR_LEV, (static_cast<std::uint32_t>(a_level)));
-
-            bit::flag::set(&(FLASH->CR), FLASH_CR_OPTSTRT);
-            wait_until::all_bits_are_cleared(FLASH->SR, FLASH_SR_BSY);
-
-            if (false == bit::flag::is(FLASH->SR, FLASH_SR_PESD))
-            {
-                bit::flag::set(&(FLASH->CR), FLASH_CR_OBL_LAUNCH);
-
-                return true;
-            }
+            bit::flag::set(&(FLASH->OPTR), FLASH_OPTR_BOR_LEV, (static_cast<std::uint32_t>(level_a)));
+            return true;
         }
     }
 
     return false;
 }
 
-option_bytes::BOR::Level option_bytes::BOR::get_level()
+option_bytes::BOR::Level option_bytes::BOR::get()
 {
-    Scoped_guard<hsem::_1_step> sem2_guard(0x2u);
-    Scoped_guard<internal_flash::unlocker> flash_guard;
-
     return static_cast<Level>(bit::flag::get(FLASH->OPTR, FLASH_OPTR_BOR_LEV));
 }
 
-std::uint16_t option_bytes::BOR::get_mV()
+void option_bytes::RDP::set(Level level_a)
 {
-    const auto level = get_level();
+    Scoped_guard<internal_flash::unlocker> flash_guard;
+    Scoped_guard<option_bytes::unlocker> ob_guard;
 
-    switch (level)
+    bit::flag::set(&(FLASH->OPTR), FLASH_OPTR_RDP, static_cast<std::uint32_t>(level_a));
+}
+bool option_bytes::RDP::set(Level level_a, Milliseconds timeout_a)
+{
+    const std::uint64_t timeout_timestamp = tick_counter<Milliseconds>::get() + timeout_a.get();
+    Scoped_guard<internal_flash::unlocker> flash_guard(timeout_timestamp - tick_counter<Milliseconds>::get());
+
+    if (true == flash_guard.is_unlocked())
     {
-        case Level::_1_7V:
-            return 1700u;
+        Scoped_guard<option_bytes::unlocker> ob_guard(timeout_timestamp - tick_counter<Milliseconds>::get());
 
-        case Level::_2_0V:
-            return 2000u;
-
-        case Level::_2_2V:
-            return 2200u;
-
-        case Level::_2_5V:
-            return 2500u;
-
-        case Level::_2_8V:
-            return 2800u;
+        if (true == ob_guard.is_unlocked())
+        {
+            bit::flag::set(&(FLASH->OPTR), FLASH_OPTR_RDP, static_cast<std::uint32_t>(level_a));
+            return true;
+        }
     }
 
-    return 0u;
+    return false;
+}
+
+option_bytes::RDP::Level option_bytes::RDP::get()
+{
+    std::uint32_t reg_val = bit::flag::get(FLASH->OPTR, FLASH_OPTR_RDP);
+
+    switch (reg_val)
+    {
+        case 0xAAu:
+            return Level::_0;
+        case 0xCCu:
+            return Level::_2;
+    }
+
+    return Level::_1;
+}
+
+bool option_bytes::launch()
+{
+    Scoped_guard<hsem::_1_step> sem2_guard(0x2u);
+    Scoped_guard<internal_flash::unlocker> flash_guard;
+    Scoped_guard<option_bytes::unlocker> ob_guard;
+
+    while (true)
+    {
+        wait_until::all_bits_are_cleared(FLASH->SR, FLASH_SR_PESD);
+
+        Scoped_guard<nvic> interrupt_guard;
+
+        if (false == hsem::is_locked(0x6u) && true == hsem::_1_step::try_lock(0x7u))
+        {
+            wait_until::all_bits_are_cleared(FLASH->SR, FLASH_SR_CFGBSY);
+            bit::flag::set(&(FLASH->CR), FLASH_CR_OPTSTRT);
+
+            wait_until::all_bits_are_cleared(FLASH->SR, FLASH_SR_BSY);
+
+            bit::flag::set(&(FLASH->CR), FLASH_CR_OBL_LAUNCH);
+
+            // we should never get to this point
+            hsem::_1_step::unlock(0x7u);
+            return false;
+        }
+    }
+
+    return false;
+}
+bool option_bytes::launch(Milliseconds timeout_a)
+{
+    const std::uint64_t timeout_timestamp = tick_counter<Milliseconds>::get() + timeout_a.get();
+    Scoped_guard<hsem::_1_step> sem2_guard(0x2u, timeout_timestamp - tick_counter<Milliseconds>::get());
+
+    if (true == sem2_guard.is_locked())
+    {
+        Scoped_guard<internal_flash::unlocker> flash_guard(timeout_timestamp - tick_counter<Milliseconds>::get());
+
+        if (true == flash_guard.is_unlocked())
+        {
+            Scoped_guard<option_bytes::unlocker> ob_guard(timeout_timestamp - tick_counter<Milliseconds>::get());
+
+            if (true == ob_guard.is_unlocked())
+            {
+                bool repeat = false;
+
+                do
+                {
+                    if (true == wait_until::all_bits_are_cleared(
+                                    FLASH->SR, FLASH_SR_PESD, timeout_timestamp - tick_counter<Milliseconds>::get()))
+                    {
+                        Scoped_guard<nvic> interrupt_guard;
+
+                        if (false == hsem::is_locked(0x6u) && true == hsem::_1_step::try_lock(0x7u))
+                        {
+                            if (true ==
+                                wait_until::all_bits_are_cleared(
+                                    FLASH->SR, FLASH_SR_CFGBSY, timeout_timestamp - tick_counter<Milliseconds>::get()))
+                            {
+                                bit::flag::set(&(FLASH->CR), FLASH_CR_OPTSTRT);
+
+                                if (true ==
+                                    wait_until::all_bits_are_cleared(
+                                        FLASH->SR, FLASH_SR_BSY, timeout_timestamp - tick_counter<Milliseconds>::get()))
+                                {
+                                    bit::flag::set(&(FLASH->CR), FLASH_CR_OBL_LAUNCH);
+
+                                    // we should never get to this point
+                                    hsem::_1_step::unlock(0x7u);
+                                    return false;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            repeat = true;
+                        }
+                    }
+
+                } while (true == repeat && (timeout_timestamp - tick_counter<Milliseconds>::get()) > 0u);
+            }
+        }
+    }
+
+    return false;
 }
 } // namespace xmcu::soc::st::arm::m4::wb::rm0434::peripherals

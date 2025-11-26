@@ -14,6 +14,7 @@
 // xmcu
 #include <soc/Scoped_guard.hpp>
 #include <soc/st/arm/m4/nvic.hpp>
+#include <soc/st/arm/m4/wb/rm0434/config.hpp>
 #include <xmcu/Duration.hpp>
 #include <xmcu/Limited.hpp>
 #include <xmcu/Not_null.hpp>
@@ -31,21 +32,10 @@ public:
     struct s : private non_constructible
     {
         static constexpr std::size_t start = FLASH_BASE;
-        static constexpr std::size_t page_size_in_bytes = 4096u;
+        static constexpr std::size_t page_size_in_bytes = XMCU_FLASH_PAGE_SIZE;
         static constexpr std::size_t start_otp = OTP_AREA_BASE;
         static constexpr std::size_t size_otp = 1024u;
-
-#if defined(XMCU_SOC_MODEL_STM32WB55CG) || defined(XMCU_SOC_MODEL_STM32WB55RG) || \
-    defined(XMCU_SOC_MODEL_STM32WB55VG) || defined(XMCU_SOC_MODEL_STM32WB55CGU6)
-        static constexpr std::size_t pages_count = 256u;
-#elif defined(XMCU_SOC_MODEL_STM32WB55CE) || defined(XMCU_SOC_MODEL_STM32WB55RE) || \
-    defined(XMCU_SOC_MODEL_STM32WB55VE) || defined(XMCU_SOC_MODEL_STM32WB35CEU6A)
-        static constexpr std::size_t pages_count = 128u;
-#elif defined(XMCU_SOC_MODEL_STM32WB55CC) || defined(XMCU_SOC_MODEL_STM32WB55RC) || defined(XMCU_SOC_MODEL_STM32WB55VC)
-        static constexpr std::size_t pages_count = 64u;
-#else
-        static_assert(false, "Unkown MCU model");
-#endif
+        static constexpr std::size_t pages_count = XMCU_FLASH_PAGES_COUNT;
         static constexpr std::size_t size_in_bytes = page_size_in_bytes * pages_count;
     };
 
