@@ -6,6 +6,9 @@
 // this
 #include <rm0434/peripherals/pka/pka.hpp>
 
+// std
+#include <utility>
+
 // externals
 #include <stm32wbxx.h>
 
@@ -14,6 +17,7 @@
 #include <soc/Scoped_guard.hpp>
 #include <soc/st/arm/m4/nvic.hpp>
 #include <xmcu/Duration.hpp>
+#include <xmcu/assertion.hpp>
 #include <xmcu/bit.hpp>
 
 using namespace xmcu::soc::st::arm::m4::wb::rm0434::peripherals;
@@ -38,7 +42,7 @@ std::uint32_t get_optimal_bit_size(std::uint32_t a_byte_number, std::uint8_t a_m
     return ((a_byte_number - 1ul) * 8ul) + position;
 }
 
-void copy_to_pka_memory(volatile std::uint32_t* dst, const std::uint8_t* src, std::size_t n)
+void copy_to_pka_memory(volatile std::uint32_t* dst, const std::uint8_t* src, std::size_t size)
 {
     if (nullptr == dst || nullptr == src)
     {
@@ -47,29 +51,55 @@ void copy_to_pka_memory(volatile std::uint32_t* dst, const std::uint8_t* src, st
 
     std::size_t index = 0u;
 
-    for (; index < (n / 4u); ++index)
+    for (; index < (size / 4u); ++index)
     {
-        dst[index] = static_cast<std::uint32_t>(src[n - index * 4u - 1u]) |
-                     static_cast<std::uint32_t>(src[n - index * 4u - 2u]) << 8u |
-                     static_cast<std::uint32_t>(src[n - index * 4u - 3u]) << 16u |
-                     static_cast<std::uint32_t>(src[n - index * 4u - 4u]) << 24u;
+        dst[index] = static_cast<std::uint32_t>(src[size - index * 4u - 1u]) |
+                     static_cast<std::uint32_t>(src[size - index * 4u - 2u]) << 8u |
+                     static_cast<std::uint32_t>(src[size - index * 4u - 3u]) << 16u |
+                     static_cast<std::uint32_t>(src[size - index * 4u - 4u]) << 24u;
     }
 
-    if (1u == n % 4u)
+    if (1u == size % 4u)
     {
-        dst[index] = static_cast<std::uint32_t>(src[n - (index * 4u) - 1u]);
+        dst[index] = static_cast<std::uint32_t>(src[size - (index * 4u) - 1u]);
     }
-    else if (2u == n % 4u)
+    else if (2u == size % 4u)
     {
-        dst[index] = static_cast<std::uint32_t>(src[n - index * 4u - 1u]) |
-                     static_cast<std::uint32_t>(src[n - index * 4u - 2u]) << 8u;
+        dst[index] = static_cast<std::uint32_t>(src[size - index * 4u - 1u]) |
+                     static_cast<std::uint32_t>(src[size - index * 4u - 2u]) << 8u;
     }
-    else if (3u == n % 4u)
+    else if (3u == size % 4u)
     {
-        dst[index] = static_cast<std::uint32_t>(src[n - index * 4u - 1u]) |
-                     static_cast<std::uint32_t>(src[n - index * 4u - 2u]) << 8u |
-                     static_cast<std::uint32_t>(src[n - index * 4u - 3u]) << 16u;
+        dst[index] = static_cast<std::uint32_t>(src[size - index * 4u - 1u]) |
+                     static_cast<std::uint32_t>(src[size - index * 4u - 2u]) << 8u |
+                     static_cast<std::uint32_t>(src[size - index * 4u - 3u]) << 16u;
     }
+}
+
+void write_to_pka_memory(volatile std::uint32_t* dst, const std::uint8_t* src, std::size_t size)
+{
+    copy_to_pka_memory(dst, src, size);
+    dst[(size + 3) / 4] = 0u;
+}
+
+void load_to_pka_ram(const pka::Ecdsa_verify_ctx& a_ctx)
+{
+    PKA->RAM[PKA_ECDSA_VERIF_IN_ORDER_NB_BITS] = get_optimal_bit_size(a_ctx.prime_order_size, *(a_ctx.p_prime_order));
+    PKA->RAM[PKA_ECDSA_VERIF_IN_MOD_NB_BITS] = get_optimal_bit_size(a_ctx.modulus_size, *(a_ctx.p_modulus));
+    PKA->RAM[PKA_ECDSA_VERIF_IN_A_COEFF_SIGN] = a_ctx.coef_sign;
+
+    write_to_pka_memory(&PKA->RAM[PKA_ECDSA_VERIF_IN_A_COEFF], a_ctx.p_coef, a_ctx.modulus_size);
+    write_to_pka_memory(&PKA->RAM[PKA_ECDSA_VERIF_IN_MOD_GF], a_ctx.p_modulus, a_ctx.modulus_size);
+    write_to_pka_memory(&PKA->RAM[PKA_ECDSA_VERIF_IN_INITIAL_POINT_X], a_ctx.p_base_point_x, a_ctx.modulus_size);
+    write_to_pka_memory(&PKA->RAM[PKA_ECDSA_VERIF_IN_INITIAL_POINT_Y], a_ctx.p_base_point_y, a_ctx.modulus_size);
+    write_to_pka_memory(
+        &PKA->RAM[PKA_ECDSA_VERIF_IN_PUBLIC_KEY_POINT_X], a_ctx.p_pub_key_curve_pt_x, a_ctx.modulus_size);
+    write_to_pka_memory(
+        &PKA->RAM[PKA_ECDSA_VERIF_IN_PUBLIC_KEY_POINT_Y], a_ctx.p_pub_key_curve_pt_y, a_ctx.modulus_size);
+    write_to_pka_memory(&PKA->RAM[PKA_ECDSA_VERIF_IN_SIGNATURE_R], a_ctx.p_r_sign, a_ctx.prime_order_size);
+    write_to_pka_memory(&PKA->RAM[PKA_ECDSA_VERIF_IN_SIGNATURE_S], a_ctx.p_s_sign, a_ctx.prime_order_size);
+    write_to_pka_memory(&PKA->RAM[PKA_ECDSA_VERIF_IN_HASH_E], a_ctx.p_hash, a_ctx.prime_order_size);
+    write_to_pka_memory(&PKA->RAM[PKA_ECDSA_VERIF_IN_ORDER_N], a_ctx.p_prime_order, a_ctx.prime_order_size);
 }
 
 } // namespace
@@ -123,49 +153,24 @@ void pka::disable()
     bit::flag::set(&(PKA->CLRFR), PKA_CLRFR_PROCENDFC | PKA_CLRFR_RAMERRFC | PKA_CLRFR_ADDRERRFC);
 }
 
-bool pka::load_to_ram(const Ecdsa_verify_params& a_params)
+pka::Pooling::Ecdsa_verify_result pka::Pooling::execute(const Ecdsa_verify_ctx& a_ctx, Milliseconds a_timeout)
 {
-    PKA->RAM[PKA_ECDSA_VERIF_IN_ORDER_NB_BITS] =
-        get_optimal_bit_size(a_params.prime_order_size, *(a_params.p_prime_order));
-    PKA->RAM[PKA_ECDSA_VERIF_IN_MOD_NB_BITS] = get_optimal_bit_size(a_params.modulus_size, *(a_params.p_modulus));
-    PKA->RAM[PKA_ECDSA_VERIF_IN_A_COEFF_SIGN] = a_params.coef_sign;
+    const std::uint64_t end = tick_counter<Milliseconds>::get() + a_timeout.get();
 
-    auto copy_and_end = [](volatile std::uint32_t* dst, const std::uint8_t* src, std::size_t size) {
-        copy_to_pka_memory(dst, src, size);
-        dst[(size + 3) / 4] = 0u;
-    };
-
-    copy_and_end(&PKA->RAM[PKA_ECDSA_VERIF_IN_A_COEFF], a_params.p_coef, a_params.modulus_size);
-    copy_and_end(&PKA->RAM[PKA_ECDSA_VERIF_IN_MOD_GF], a_params.p_modulus, a_params.modulus_size);
-    copy_and_end(&PKA->RAM[PKA_ECDSA_VERIF_IN_INITIAL_POINT_X], a_params.p_base_point_x, a_params.modulus_size);
-    copy_and_end(&PKA->RAM[PKA_ECDSA_VERIF_IN_INITIAL_POINT_Y], a_params.p_base_point_y, a_params.modulus_size);
-    copy_and_end(
-        &PKA->RAM[PKA_ECDSA_VERIF_IN_PUBLIC_KEY_POINT_X], a_params.p_pub_key_curve_pt_x, a_params.modulus_size);
-    copy_and_end(
-        &PKA->RAM[PKA_ECDSA_VERIF_IN_PUBLIC_KEY_POINT_Y], a_params.p_pub_key_curve_pt_y, a_params.modulus_size);
-    copy_and_end(&PKA->RAM[PKA_ECDSA_VERIF_IN_SIGNATURE_R], a_params.p_r_sign, a_params.prime_order_size);
-    copy_and_end(&PKA->RAM[PKA_ECDSA_VERIF_IN_SIGNATURE_S], a_params.p_s_sign, a_params.prime_order_size);
-    copy_and_end(&PKA->RAM[PKA_ECDSA_VERIF_IN_HASH_E], a_params.p_hash, a_params.prime_order_size);
-    copy_and_end(&PKA->RAM[PKA_ECDSA_VERIF_IN_ORDER_N], a_params.p_prime_order, a_params.prime_order_size);
-
-    return true;
-}
-
-pka::Pooling::Operation_result pka::Pooling::start(Mode a_mode, Milliseconds a_timeout)
-{
-    if (true == bit::flag::is(PKA->SR, PKA_SR_BUSY)) {
-        return Operation_result::busy;
+    if (true == bit::flag::is(PKA->SR, PKA_SR_BUSY))
+    {
+        return { .status = Ecdsa_verify_result::busy, .is_signature_valid = false };
     }
 
-    const std::uint64_t end = tick_counter<Milliseconds>::get() + a_timeout.get();
+    load_to_pka_ram(a_ctx);
 
     bit::flag::set(&(PKA->CR),
                    PKA_CR_MODE | PKA_CR_PROCENDIE | PKA_CR_RAMERRIE | PKA_CR_ADDRERRIE,
-                   static_cast<std::uint32_t>(a_mode));
+                   std::to_underlying(Mode::ecdsa_verify));
 
     bit::flag::set(&(PKA->CR), PKA_CR_START);
 
-    Operation_result result = Operation_result::operation_end;
+    Ecdsa_verify_result::Operation_status status = Ecdsa_verify_result::Operation_status::ok;
 
     bool finished = false;
 
@@ -173,21 +178,21 @@ pka::Pooling::Operation_result pka::Pooling::start(Mode a_mode, Milliseconds a_t
     {
         if (bit::flag::is(PKA->SR, PKA_SR_PROCENDF))
         {
-            result = Operation_result::operation_end;
+            status = Ecdsa_verify_result::ok;
             finished = true;
             break;
         }
 
         if (bit::flag::is(PKA->SR, PKA_SR_RAMERRF))
         {
-            result = Operation_result::ram_err;
+            status = Ecdsa_verify_result::ram_err;
             finished = true;
             break;
         }
 
         if (bit::flag::is(PKA->SR, PKA_SR_ADDRERRF))
         {
-            result = Operation_result::addr_err;
+            status = Ecdsa_verify_result::addr_err;
             finished = true;
             break;
         }
@@ -195,17 +200,19 @@ pka::Pooling::Operation_result pka::Pooling::start(Mode a_mode, Milliseconds a_t
 
     if (false == finished)
     {
-        result = Operation_result::timeout;
+        status = Ecdsa_verify_result::timeout;
 
         bit::flag::clear(&(PKA->CR), PKA_CR_EN);
         bit::flag::set(&(PKA->CR), PKA_CR_EN);
     }
 
-    if (Operation_result::operation_end == result)
+    Ecdsa_verify_result result = { .status = status, .is_signature_valid = false };
+
+    if (Ecdsa_verify_result::ok == status)
     {
-        if (a_mode == Mode::ecdsa_sign && PKA->RAM[PKA_ECDSA_SIGN_OUT_ERROR] != 0u)
+        if (true == this->p_pka->is_ecdsa_signature_valid())
         {
-            result = Operation_result::ecdsa_sign_out_err;
+            result.is_signature_valid = true;
         }
     }
 
@@ -234,21 +241,24 @@ void pka::Interrupt::enable(const IRQ_config& a_irq_config)
 void pka::Interrupt::disable()
 {
     // TODO: stop processing ?
-    // bit::flag::clear(&(PKA->CR), PKA_CR_PROCENDIE | PKA_CR_RAMERRIE | PKA_CR_ADDRERRIE);
+    bit::flag::clear(&(PKA->CR), PKA_CR_PROCENDIE | PKA_CR_RAMERRIE | PKA_CR_ADDRERRIE);
+
     NVIC_DisableIRQ(this->p_pka->irqn);
 
     pka_context = nullptr;
 }
 
-void pka::Interrupt::start(Mode a_mode, const Callback& a_callback)
+void pka::Interrupt::start(const Ecdsa_verify_ctx& a_ctx, const Callback& a_callback)
 {
     hkm_assert(nullptr != a_callback.function);
 
     Scoped_guard<nvic> guard;
     this->p_pka->callback = a_callback;
 
+    load_to_pka_ram(a_ctx);
+
     bit::flag::set(&(PKA->CR),
-                   static_cast<std::uint32_t>(a_mode) | PKA_CR_PROCENDIE | PKA_CR_RAMERRIE | PKA_CR_ADDRERRIE);
+                   std::to_underlying(Mode::ecdsa_verify) | PKA_CR_PROCENDIE | PKA_CR_RAMERRIE | PKA_CR_ADDRERRIE);
     bit::flag::set(&(PKA->CR), PKA_CR_START);
 }
 

@@ -19,9 +19,6 @@
 #include <xmcu/Non_copyable.hpp>
 #include <xmcu/non_constructible.hpp>
 
-// debug
-#include <xmcu/assertion.hpp>
-
 namespace xmcu::soc::st::arm::m4::wb::rm0434::peripherals {
 class pka : private xmcu::Non_copyable
 {
@@ -48,18 +45,16 @@ public:
         montgomery_mul_small = PKA_CR_MODE_4,
     };
 
-    struct Ecdsa_verify_params
+    struct Ecdsa_verify_ctx
     {
         std::uint32_t prime_order_size;
         std::uint32_t modulus_size;
-
         std::uint32_t coef_sign;
-
         const uint8_t* p_coef;
         const uint8_t* p_modulus;
-
         const uint8_t* p_base_point_x;
         const uint8_t* p_base_point_y;
+        const uint8_t* p_prime_order;
 
         const uint8_t* p_pub_key_curve_pt_x;
         const uint8_t* p_pub_key_curve_pt_y;
@@ -67,25 +62,29 @@ public:
         const uint8_t* p_r_sign;
         const uint8_t* p_s_sign;
         const uint8_t* p_hash;
-        const uint8_t* p_prime_order;
     };
 
     class Pooling : private Non_copyable
     {
     public:
-        enum class Operation_result
+        struct Ecdsa_verify_result
         {
-            busy,
-            ram_err,
-            addr_err,
-            ecdsa_sign_out_err,
-            timeout,
-            operation_end,
+            enum class Operation_status
+            {
+                ok,
+                busy,
+                ram_err,
+                addr_err,
+                timeout,
+            };
+
+            using enum Operation_status;
+
+            Operation_status status = Operation_status::busy;
+            bool is_signature_valid = false;
         };
 
-        using enum Operation_result;
-
-        Operation_result start(Mode a_mode, Milliseconds a_timeout);
+        Ecdsa_verify_result execute(const Ecdsa_verify_ctx& a_ctx, Milliseconds a_timeout);
 
     private:
         pka* p_pka;
@@ -114,7 +113,7 @@ public:
 
         void enable(const IRQ_config& a_irq_config);
         void disable();
-        void start(Mode a_mode, const Callback& a_callback);
+        void start(const Ecdsa_verify_ctx& a_ctx, const Callback& a_callback);
 
     private:
         pka* p_pka;
@@ -124,7 +123,6 @@ public:
     void enable();
     void disable();
 
-    bool load_to_ram(const Ecdsa_verify_params& a_params);
     bool is_ecdsa_signature_valid();
 
     Pooling pooling;
