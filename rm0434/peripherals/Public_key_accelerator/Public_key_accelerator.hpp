@@ -20,7 +20,7 @@
 #include <xmcu/non_constructible.hpp>
 
 namespace xmcu::soc::st::arm::m4::wb::rm0434::peripherals {
-class pka : private xmcu::Non_copyable
+class Public_key_accelerator : private xmcu::Non_copyable
 {
 public:
     enum class Mode : std::uint32_t
@@ -45,50 +45,31 @@ public:
         montgomery_mul_small = PKA_CR_MODE_4,
     };
 
-    struct Ecdsa_verify_ctx
-    {
-        std::uint32_t prime_order_size;
-        std::uint32_t modulus_size;
-        std::uint32_t coef_sign;
-        const uint8_t* p_coef;
-        const uint8_t* p_modulus;
-        const uint8_t* p_base_point_x;
-        const uint8_t* p_base_point_y;
-        const uint8_t* p_prime_order;
+    using enum Mode;
 
-        const uint8_t* p_pub_key_curve_pt_x;
-        const uint8_t* p_pub_key_curve_pt_y;
-
-        const uint8_t* p_r_sign;
-        const uint8_t* p_s_sign;
-        const uint8_t* p_hash;
-    };
+    template<Mode> struct Context;
 
     class Pooling : private Non_copyable
     {
     public:
-        struct Ecdsa_verify_result
+        enum class Status
         {
-            enum class Operation_status
-            {
-                ok,
-                busy,
-                ram_err,
-                addr_err,
-                timeout,
-            };
-
-            using enum Operation_status;
-
-            Operation_status status = Operation_status::busy;
-            bool is_signature_valid = false;
+            ok,
+            busy,
+            ram_err,
+            addr_err,
+            timeout,
         };
 
-        Ecdsa_verify_result execute(const Ecdsa_verify_ctx& a_ctx, Milliseconds a_timeout);
+        template<Mode> struct Result;
+
+        using enum Status;
+
+        template<Mode mode> Result<mode> execute(const Context<mode>& a_ctx, Milliseconds a_timeout);
 
     private:
-        pka* p_pka;
-        friend pka;
+        Public_key_accelerator* p_pka;
+        friend Public_key_accelerator;
     };
 
     class Interrupt : private Non_copyable
@@ -105,19 +86,19 @@ public:
 
         struct Callback
         {
-            using Function = void (*)(pka* a_p_this, Source a_source);
+            using Function = void (*)(Public_key_accelerator* a_p_this, Source a_source);
 
             Function function = nullptr;
             void* p_user_data = nullptr;
         };
-
+        
         void enable(const IRQ_config& a_irq_config);
         void disable();
-        void start(const Ecdsa_verify_ctx& a_ctx, const Callback& a_callback);
+        template<Mode mode> void start(const Context<mode>& a_ctx, const Callback& a_callback);
 
     private:
-        pka* p_pka;
-        friend pka;
+        Public_key_accelerator* p_pka;
+        friend Public_key_accelerator;
     };
 
     void enable();
@@ -129,7 +110,7 @@ public:
     Interrupt interrupt;
 
 private:
-    explicit pka(IRQn_Type a_irqn)
+    explicit Public_key_accelerator(IRQn_Type a_irqn)
         : irqn(a_irqn)
     {
         this->pooling.p_pka = this;
@@ -140,15 +121,40 @@ private:
     Interrupt::Callback callback;
 
     template<typename> friend class soc::peripheral;
-    friend void PKA_interrupt_handler(pka* a_p_this);
+    friend void PKA_interrupt_handler(Public_key_accelerator* a_p_this);
 };
 
-void PKA_interrupt_handler(pka* a_p_this);
+void PKA_interrupt_handler(Public_key_accelerator* a_p_this);
+
+template<> struct Public_key_accelerator::Context<Public_key_accelerator::Mode::ecdsa_verify>
+{
+    std::uint32_t prime_order_size;
+    std::uint32_t modulus_size;
+    std::uint32_t coef_sign;
+    const uint8_t* p_coef;
+    const uint8_t* p_modulus;
+    const uint8_t* p_base_point_x;
+    const uint8_t* p_base_point_y;
+    const uint8_t* p_prime_order;
+
+    const uint8_t* p_pub_key_curve_pt_x;
+    const uint8_t* p_pub_key_curve_pt_y;
+
+    const uint8_t* p_r_sign;
+    const uint8_t* p_s_sign;
+    const uint8_t* p_hash;
+};
+
+template<> struct Public_key_accelerator::Pooling::Result<Public_key_accelerator::Mode::ecdsa_verify>
+{
+    Public_key_accelerator::Pooling::Status status = Status::busy;
+    bool is_signature_valid = false;
+};
 
 } // namespace xmcu::soc::st::arm::m4::wb::rm0434::peripherals
 
 namespace xmcu::soc::st::arm::m4::wb::rm0434 {
-template<> class rcc<peripherals::pka> : private xmcu::non_constructible
+template<> class rcc<peripherals::Public_key_accelerator> : private xmcu::non_constructible
 {
 public:
     static void enable();
@@ -157,12 +163,12 @@ public:
 } // namespace xmcu::soc::st::arm::m4::wb::rm0434
 
 namespace xmcu::soc {
-template<> class peripheral<st::arm::m4::wb::rm0434::peripherals::pka> : private non_constructible
+template<> class peripheral<st::arm::m4::wb::rm0434::peripherals::Public_key_accelerator> : private non_constructible
 {
 public:
-    static st::arm::m4::wb::rm0434::peripherals::pka create()
+    static st::arm::m4::wb::rm0434::peripherals::Public_key_accelerator create()
     {
-        return st::arm::m4::wb::rm0434::peripherals::pka(IRQn_Type::PKA_IRQn);
+        return st::arm::m4::wb::rm0434::peripherals::Public_key_accelerator(IRQn_Type::PKA_IRQn);
     }
 };
 } // namespace xmcu::soc

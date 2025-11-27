@@ -4,7 +4,7 @@
  */
 
 // this
-#include <rm0434/peripherals/pka/pka.hpp>
+#include <rm0434/peripherals/Public_key_accelerator/Public_key_accelerator.hpp>
 
 // std
 #include <utility>
@@ -22,9 +22,9 @@
 
 using namespace xmcu::soc::st::arm::m4::wb::rm0434::peripherals;
 
-static pka* pka_context = nullptr;
-
 namespace {
+
+Public_key_accelerator* pka_context = nullptr;
 
 std::uint8_t clz(std::uint8_t a_value)
 {
@@ -82,7 +82,7 @@ void write_to_pka_memory(volatile std::uint32_t* dst, const std::uint8_t* src, s
     dst[(size + 3) / 4] = 0u;
 }
 
-void load_to_pka_ram(const pka::Ecdsa_verify_ctx& a_ctx)
+void load_to_pka_ram(const Public_key_accelerator::Context<Public_key_accelerator::Mode::ecdsa_verify>& a_ctx)
 {
     PKA->RAM[PKA_ECDSA_VERIF_IN_ORDER_NB_BITS] = get_optimal_bit_size(a_ctx.prime_order_size, *(a_ctx.p_prime_order));
     PKA->RAM[PKA_ECDSA_VERIF_IN_MOD_NB_BITS] = get_optimal_bit_size(a_ctx.modulus_size, *(a_ctx.p_modulus));
@@ -122,18 +122,18 @@ using namespace xmcu;
 
 namespace peripherals {
 
-void PKA_interrupt_handler(pka* a_p_this)
+void PKA_interrupt_handler(Public_key_accelerator* a_p_this)
 {
     hkm_assert(nullptr != a_p_this);
 
-    pka::Interrupt::Source source = pka::Interrupt::operation_end;
+    Public_key_accelerator::Interrupt::Source source = Public_key_accelerator::Interrupt::operation_end;
     if (true == bit::flag::is(PKA->SR, PKA_SR_ADDRERRF))
     {
-        source = pka::Interrupt::addr_err;
+        source = Public_key_accelerator::Interrupt::addr_err;
     }
     else if (true == bit::flag::is(PKA->SR, PKA_SR_RAMERRF))
     {
-        source = pka::Interrupt::ram_err;
+        source = Public_key_accelerator::Interrupt::ram_err;
     }
 
     a_p_this->callback.function(a_p_this, source);
@@ -141,25 +141,26 @@ void PKA_interrupt_handler(pka* a_p_this)
     bit::flag::set(&(PKA->CLRFR), PKA_CLRFR_ADDRERRFC | PKA_CLRFR_RAMERRFC | PKA_CLRFR_PROCENDFC);
 }
 
-void pka::enable()
+void Public_key_accelerator::enable()
 {
     PKA->CR = PKA_CR_EN;
     bit::flag::set(&(PKA->CLRFR), PKA_CLRFR_PROCENDFC | PKA_CLRFR_RAMERRFC | PKA_CLRFR_ADDRERRFC);
 }
 
-void pka::disable()
+void Public_key_accelerator::disable()
 {
     PKA->CR = 0u;
     bit::flag::set(&(PKA->CLRFR), PKA_CLRFR_PROCENDFC | PKA_CLRFR_RAMERRFC | PKA_CLRFR_ADDRERRFC);
 }
 
-pka::Pooling::Ecdsa_verify_result pka::Pooling::execute(const Ecdsa_verify_ctx& a_ctx, Milliseconds a_timeout)
+template<> Public_key_accelerator::Pooling::Result<Public_key_accelerator::ecdsa_verify>
+Public_key_accelerator::Pooling::execute(const Context<Mode::ecdsa_verify>& a_ctx, Milliseconds a_timeout)
 {
     const std::uint64_t end = tick_counter<Milliseconds>::get() + a_timeout.get();
 
     if (true == bit::flag::is(PKA->SR, PKA_SR_BUSY))
     {
-        return { .status = Ecdsa_verify_result::busy, .is_signature_valid = false };
+        return { .status = Status::busy, .is_signature_valid = false };
     }
 
     load_to_pka_ram(a_ctx);
@@ -170,7 +171,7 @@ pka::Pooling::Ecdsa_verify_result pka::Pooling::execute(const Ecdsa_verify_ctx& 
 
     bit::flag::set(&(PKA->CR), PKA_CR_START);
 
-    Ecdsa_verify_result::Operation_status status = Ecdsa_verify_result::Operation_status::ok;
+    Status status = Status::ok;
 
     bool finished = false;
 
@@ -178,21 +179,21 @@ pka::Pooling::Ecdsa_verify_result pka::Pooling::execute(const Ecdsa_verify_ctx& 
     {
         if (bit::flag::is(PKA->SR, PKA_SR_PROCENDF))
         {
-            status = Ecdsa_verify_result::ok;
+            status = Status::ok;
             finished = true;
             break;
         }
 
         if (bit::flag::is(PKA->SR, PKA_SR_RAMERRF))
         {
-            status = Ecdsa_verify_result::ram_err;
+            status = Status::ram_err;
             finished = true;
             break;
         }
 
         if (bit::flag::is(PKA->SR, PKA_SR_ADDRERRF))
         {
-            status = Ecdsa_verify_result::addr_err;
+            status = Status::addr_err;
             finished = true;
             break;
         }
@@ -200,15 +201,15 @@ pka::Pooling::Ecdsa_verify_result pka::Pooling::execute(const Ecdsa_verify_ctx& 
 
     if (false == finished)
     {
-        status = Ecdsa_verify_result::timeout;
+        status = Status::timeout;
 
         bit::flag::clear(&(PKA->CR), PKA_CR_EN);
         bit::flag::set(&(PKA->CR), PKA_CR_EN);
     }
 
-    Ecdsa_verify_result result = { .status = status, .is_signature_valid = false };
+    Result<Mode::ecdsa_verify> result = { .status = status, .is_signature_valid = false };
 
-    if (Ecdsa_verify_result::ok == status)
+    if (Pooling::Status::ok == status)
     {
         if (true == this->p_pka->is_ecdsa_signature_valid())
         {
@@ -221,12 +222,12 @@ pka::Pooling::Ecdsa_verify_result pka::Pooling::execute(const Ecdsa_verify_ctx& 
     return result;
 }
 
-bool pka::is_ecdsa_signature_valid()
+bool Public_key_accelerator::is_ecdsa_signature_valid()
 {
     return 0u == PKA->RAM[PKA_ECDSA_VERIF_OUT_RESULT];
 }
 
-void pka::Interrupt::enable(const IRQ_config& a_irq_config)
+void Public_key_accelerator::Interrupt::enable(const IRQ_config& a_irq_config)
 {
     hkm_assert(nullptr == pka_context);
 
@@ -238,7 +239,7 @@ void pka::Interrupt::enable(const IRQ_config& a_irq_config)
     NVIC_EnableIRQ(this->p_pka->irqn);
 }
 
-void pka::Interrupt::disable()
+void Public_key_accelerator::Interrupt::disable()
 {
     // TODO: stop processing ?
     bit::flag::clear(&(PKA->CR), PKA_CR_PROCENDIE | PKA_CR_RAMERRIE | PKA_CR_ADDRERRIE);
@@ -248,7 +249,8 @@ void pka::Interrupt::disable()
     pka_context = nullptr;
 }
 
-void pka::Interrupt::start(const Ecdsa_verify_ctx& a_ctx, const Callback& a_callback)
+template<>
+void Public_key_accelerator::Interrupt::start(const Context<Mode::ecdsa_verify>& a_ctx, const Callback& a_callback)
 {
     hkm_assert(nullptr != a_callback.function);
 
@@ -264,13 +266,13 @@ void pka::Interrupt::start(const Ecdsa_verify_ctx& a_ctx, const Callback& a_call
 
 } // namespace peripherals
 
-void rcc<pka>::enable()
+void rcc<Public_key_accelerator>::enable()
 {
     bit::flag::set(&(RCC->AHB3ENR), RCC_AHB3ENR_PKAEN);
     bit::flag::is(RCC->AHB3ENR, RCC_AHB3ENR_PKAEN);
 }
 
-void rcc<pka>::disable()
+void rcc<Public_key_accelerator>::disable()
 {
     bit::flag::clear(&(RCC->AHB3ENR), RCC_AHB3ENR_PKAEN);
     bit::flag::is(RCC->AHB3ENR, RCC_AHB3ENR_PKAEN);
