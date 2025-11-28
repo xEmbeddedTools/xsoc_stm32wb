@@ -7,6 +7,7 @@
 
 // std
 #include <cstdint>
+#include <utility>
 
 // externals
 #include <stm32wbxx.h>
@@ -15,11 +16,14 @@
 #include <rm0434/rcc.hpp>
 #include <soc/peripheral.hpp>
 #include <soc/st/arm/IRQ_config.hpp>
+#include <soc/st/arm/m4/nvic.hpp>
 #include <xmcu/Duration.hpp>
 #include <xmcu/Non_copyable.hpp>
+#include <xmcu/assertion.hpp>
 #include <xmcu/non_constructible.hpp>
 
 namespace xmcu::soc::st::arm::m4::wb::rm0434::peripherals {
+
 class Public_key_accelerator : private xmcu::Non_copyable
 {
 public:
@@ -84,17 +88,22 @@ public:
 
         using enum Source;
 
-        struct Callback
+        template<Mode> struct Result;
+
+        struct Callback_ecdsa_verify
         {
-            using Function = void (*)(Public_key_accelerator* a_p_this, Source a_source);
+            using Function = void (*)(const Result<Mode::ecdsa_verify>& result);
 
             Function function = nullptr;
             void* p_user_data = nullptr;
         };
-        
+
+        template<Mode M> struct Callback_traits;
+
         void enable(const IRQ_config& a_irq_config);
         void disable();
-        template<Mode mode> void start(const Context<mode>& a_ctx, const Callback& a_callback);
+
+        template<Mode mode> void start(const Context<mode>& a_ctx, const Callback_traits<mode>::Type& a_callback);
 
     private:
         Public_key_accelerator* p_pka;
@@ -103,8 +112,6 @@ public:
 
     void enable();
     void disable();
-
-    bool is_ecdsa_signature_valid();
 
     Pooling pooling;
     Interrupt interrupt;
@@ -118,7 +125,22 @@ private:
     }
 
     IRQn_Type irqn;
-    Interrupt::Callback callback;
+
+    using Irq_dispatcher = void (*)(Public_key_accelerator* a_p_this,
+                                    Interrupt::Source a_source,
+                                    void* p_user_func,
+                                    void* p_user_data);
+
+    Irq_dispatcher irq_dispatcher = nullptr;
+    void* user_func = nullptr;
+    void* user_data = nullptr;
+
+    void load_to_pka_ram(const Context<Public_key_accelerator::Mode::ecdsa_verify>& a_ctx) const;
+
+    template<Mode mode> static void
+    dispach_irq(Public_key_accelerator* p_this, Interrupt::Source source, void* p_user_func, void* p_user_data);
+
+    template<Mode mode> void populate_result(Interrupt::Result<mode>& result, Interrupt::Source source);
 
     template<typename> friend class soc::peripheral;
     friend void PKA_interrupt_handler(Public_key_accelerator* a_p_this);
@@ -151,18 +173,67 @@ template<> struct Public_key_accelerator::Pooling::Result<Public_key_accelerator
     bool is_signature_valid = false;
 };
 
+template<> struct Public_key_accelerator::Interrupt::Result<Public_key_accelerator::Mode::ecdsa_verify>
+{
+    Public_key_accelerator::Interrupt::Source source = Source::operation_end;
+    bool is_signature_valid = false;
+};
+
+template<> struct Public_key_accelerator::Interrupt::Callback_traits<Public_key_accelerator::Mode::ecdsa_verify>
+{
+    using Type = Public_key_accelerator::Interrupt::Callback_ecdsa_verify;
+};
+
+template<Public_key_accelerator::Mode mode>
+void Public_key_accelerator::Interrupt::start(const Context<mode>& a_ctx,
+                                              const typename Callback_traits<mode>::Type& a_callback)
+{
+    Scoped_guard<nvic> guard;
+
+    this->p_pka->user_func = reinterpret_cast<void*>(a_callback.function);
+    this->p_pka->user_data = a_callback.p_user_data;
+    this->p_pka->irq_dispatcher = &Public_key_accelerator::dispach_irq<mode>;
+
+    this->p_pka->load_to_pka_ram(a_ctx);
+
+    bit::flag::set(&(PKA->CR), std::to_underlying(mode) | PKA_CR_PROCENDIE | PKA_CR_RAMERRIE | PKA_CR_ADDRERRIE);
+    bit::flag::set(&(PKA->CR), PKA_CR_START);
+}
+
+template<Public_key_accelerator::Mode mode>
+void Public_key_accelerator::dispach_irq(Public_key_accelerator* a_p_this,
+                                         Public_key_accelerator::Interrupt::Source a_source,
+                                         void* a_p_user_func,
+                                         void* a_p_user_data)
+{
+    hkm_assert(nullptr != a_p_this);
+    hkm_assert(nullptr != a_p_user_func);
+
+    using CallbackType = typename Interrupt::Callback_traits<mode>::Type::Function;
+    auto callback_fn = reinterpret_cast<CallbackType>(a_p_user_func);
+
+    Interrupt::Result<mode> result {};
+
+    a_p_this->populate_result<mode>(result, a_source);
+
+    callback_fn(result);
+}
+
 } // namespace xmcu::soc::st::arm::m4::wb::rm0434::peripherals
 
 namespace xmcu::soc::st::arm::m4::wb::rm0434 {
+
 template<> class rcc<peripherals::Public_key_accelerator> : private xmcu::non_constructible
 {
 public:
     static void enable();
     static void disable();
 };
+
 } // namespace xmcu::soc::st::arm::m4::wb::rm0434
 
 namespace xmcu::soc {
+
 template<> class peripheral<st::arm::m4::wb::rm0434::peripherals::Public_key_accelerator> : private non_constructible
 {
 public:
@@ -171,4 +242,5 @@ public:
         return st::arm::m4::wb::rm0434::peripherals::Public_key_accelerator(IRQn_Type::PKA_IRQn);
     }
 };
+
 } // namespace xmcu::soc
