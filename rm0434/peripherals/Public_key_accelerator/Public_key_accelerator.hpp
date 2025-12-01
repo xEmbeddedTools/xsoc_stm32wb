@@ -92,7 +92,7 @@ public:
 
         struct Callback_ecdsa_verify
         {
-            using Function = void (*)(const Result<Mode::ecdsa_verify>& result);
+            using Function = void (*)(const Result<Mode::ecdsa_verify>& a_result);
 
             Function function = nullptr;
             void* p_user_data = nullptr;
@@ -128,8 +128,8 @@ private:
 
     using Irq_dispatcher = void (*)(Public_key_accelerator* a_p_this,
                                     Interrupt::Source a_source,
-                                    void* p_user_func,
-                                    void* p_user_data);
+                                    void* a_p_user_func,
+                                    void* a_p_user_data);
 
     Irq_dispatcher irq_dispatcher = nullptr;
     void* user_func = nullptr;
@@ -138,9 +138,9 @@ private:
     void load_to_pka_ram(const Context<Public_key_accelerator::Mode::ecdsa_verify>& a_ctx) const;
 
     template<Mode mode> static void
-    dispach_irq(Public_key_accelerator* p_this, Interrupt::Source source, void* p_user_func, void* p_user_data);
+    dispach_irq(Public_key_accelerator* a_p_this, Interrupt::Source a_source, void* a_p_user_func, void* a_p_user_data);
 
-    template<Mode mode> void populate_result(Interrupt::Result<mode>& result, Interrupt::Source source);
+    template<Mode mode> void populate_result(Interrupt::Result<mode>& a_result, Interrupt::Source a_source);
 
     template<typename> friend class soc::peripheral;
     friend void PKA_interrupt_handler(Public_key_accelerator* a_p_this);

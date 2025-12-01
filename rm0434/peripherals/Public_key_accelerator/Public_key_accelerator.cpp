@@ -34,44 +34,45 @@ std::uint32_t get_optimal_bit_size(std::uint32_t a_byte_number, std::uint8_t a_m
     return ((a_byte_number - 1u) * 8ul) + position;
 }
 
-void copy_to_pka_memory(volatile std::uint32_t* dst, const std::uint8_t* src, std::size_t size)
+void copy_to_pka_memory(volatile std::uint32_t* a_p_dst, const std::uint8_t* a_p_src, std::size_t a_size)
 {
-    if (nullptr == dst || nullptr == src)
-    {
-        return;
-    }
+    hkm_assert(nullptr != a_p_dst);
+    hkm_assert(nullptr != a_p_src);
 
     std::size_t index = 0u;
 
-    for (; index < (size / 4u); ++index)
+    for (; index < (a_size / 4u); ++index)
     {
-        dst[index] = static_cast<std::uint32_t>(src[size - index * 4u - 1u]) |
-                     static_cast<std::uint32_t>(src[size - index * 4u - 2u]) << 8u |
-                     static_cast<std::uint32_t>(src[size - index * 4u - 3u]) << 16u |
-                     static_cast<std::uint32_t>(src[size - index * 4u - 4u]) << 24u;
+        a_p_dst[index] = static_cast<std::uint32_t>(a_p_src[a_size - index * 4u - 1u]) |
+                         static_cast<std::uint32_t>(a_p_src[a_size - index * 4u - 2u]) << 8u |
+                         static_cast<std::uint32_t>(a_p_src[a_size - index * 4u - 3u]) << 16u |
+                         static_cast<std::uint32_t>(a_p_src[a_size - index * 4u - 4u]) << 24u;
     }
 
-    if (1u == size % 4u)
+    if (1u == a_size % 4u)
     {
-        dst[index] = static_cast<std::uint32_t>(src[size - (index * 4u) - 1u]);
+        a_p_dst[index] = static_cast<std::uint32_t>(a_p_src[a_size - (index * 4u) - 1u]);
     }
-    else if (2u == size % 4u)
+    else if (2u == a_size % 4u)
     {
-        dst[index] = static_cast<std::uint32_t>(src[size - index * 4u - 1u]) |
-                     static_cast<std::uint32_t>(src[size - index * 4u - 2u]) << 8u;
+        a_p_dst[index] = static_cast<std::uint32_t>(a_p_src[a_size - index * 4u - 1u]) |
+                         static_cast<std::uint32_t>(a_p_src[a_size - index * 4u - 2u]) << 8u;
     }
-    else if (3u == size % 4u)
+    else if (3u == a_size % 4u)
     {
-        dst[index] = static_cast<std::uint32_t>(src[size - index * 4u - 1u]) |
-                     static_cast<std::uint32_t>(src[size - index * 4u - 2u]) << 8u |
-                     static_cast<std::uint32_t>(src[size - index * 4u - 3u]) << 16u;
+        a_p_dst[index] = static_cast<std::uint32_t>(a_p_src[a_size - index * 4u - 1u]) |
+                         static_cast<std::uint32_t>(a_p_src[a_size - index * 4u - 2u]) << 8u |
+                         static_cast<std::uint32_t>(a_p_src[a_size - index * 4u - 3u]) << 16u;
     }
 }
 
-void write_to_pka_memory(volatile std::uint32_t* dst, const std::uint8_t* src, std::size_t size)
+void write_to_pka_memory(volatile std::uint32_t* a_p_dst, const std::uint8_t* a_p_src, std::size_t a_size)
 {
-    copy_to_pka_memory(dst, src, size);
-    dst[(size + 3) / 4] = 0u;
+    hkm_assert(nullptr != a_p_dst);
+    hkm_assert(nullptr != a_p_src);
+
+    copy_to_pka_memory(a_p_dst, a_p_src, a_size);
+    a_p_dst[(a_size + 3) / 4] = 0u;
 }
 
 bool is_ecdsa_signature_valid()
@@ -239,11 +240,12 @@ void Public_key_accelerator::Interrupt::disable()
     pka_context = nullptr;
 }
 
-template<> void Public_key_accelerator::populate_result(Interrupt::Result<Public_key_accelerator::ecdsa_verify>& result,
-                                                        Interrupt::Source source)
+template<>
+void Public_key_accelerator::populate_result(Interrupt::Result<Public_key_accelerator::ecdsa_verify>& a_result,
+                                             Interrupt::Source a_source)
 {
-    result.is_signature_valid = Interrupt::operation_end == source && true == is_ecdsa_signature_valid();
-    result.source = source;
+    a_result.is_signature_valid = Interrupt::operation_end == a_source && true == is_ecdsa_signature_valid();
+    a_result.source = a_source;
 }
 
 } // namespace xmcu::soc::st::arm::m4::wb::rm0434::peripherals
