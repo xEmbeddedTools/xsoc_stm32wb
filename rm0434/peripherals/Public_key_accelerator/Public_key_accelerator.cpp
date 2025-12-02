@@ -7,6 +7,7 @@
 #include <rm0434/peripherals/Public_key_accelerator/Public_key_accelerator.hpp>
 
 // std
+#include <cstring>
 #include <utility>
 
 // externals
@@ -39,30 +40,36 @@ void copy_to_pka_memory(volatile std::uint32_t* a_p_dst, const std::uint8_t* a_p
     hkm_assert(nullptr != a_p_dst);
     hkm_assert(nullptr != a_p_src);
 
-    std::size_t index = 0u;
+    volatile std::uint32_t* dst_word = a_p_dst;
 
-    for (; index < (a_size / 4u); ++index)
+    std::size_t full_words = a_size / 4u;
+    std::size_t remaining_bytes = a_size % 4u;
+
+    if (remaining_bytes > 0u)
     {
-        a_p_dst[index] = static_cast<std::uint32_t>(a_p_src[a_size - index * 4u - 1u]) |
-                         static_cast<std::uint32_t>(a_p_src[a_size - index * 4u - 2u]) << 8u |
-                         static_cast<std::uint32_t>(a_p_src[a_size - index * 4u - 3u]) << 16u |
-                         static_cast<std::uint32_t>(a_p_src[a_size - index * 4u - 4u]) << 24u;
+        std::size_t head_bytes_size = remaining_bytes;
+
+        std::uint32_t final_word = 0u;
+        std::memcpy(&final_word, a_p_src, head_bytes_size);
+
+        std::uint32_t swapped_word = __builtin_bswap32(final_word);
+        std::uint32_t mask = (0xFFFFFFFFu << (8u * (4u - head_bytes_size)));
+
+        *dst_word = swapped_word & mask;
+        dst_word++;
     }
 
-    if (1u == a_size % 4u)
+    const std::uint8_t* src_byte_current = a_p_src + a_size - 4u;
+
+    for (std::size_t i = 0u; i < full_words; ++i)
     {
-        a_p_dst[index] = static_cast<std::uint32_t>(a_p_src[a_size - (index * 4u) - 1u]);
-    }
-    else if (2u == a_size % 4u)
-    {
-        a_p_dst[index] = static_cast<std::uint32_t>(a_p_src[a_size - index * 4u - 1u]) |
-                         static_cast<std::uint32_t>(a_p_src[a_size - index * 4u - 2u]) << 8u;
-    }
-    else if (3u == a_size % 4u)
-    {
-        a_p_dst[index] = static_cast<std::uint32_t>(a_p_src[a_size - index * 4u - 1u]) |
-                         static_cast<std::uint32_t>(a_p_src[a_size - index * 4u - 2u]) << 8u |
-                         static_cast<std::uint32_t>(a_p_src[a_size - index * 4u - 3u]) << 16u;
+        std::uint32_t word;
+        std::memcpy(&word, src_byte_current, sizeof(word));
+
+        *dst_word = __builtin_bswap32(word);
+
+        dst_word++;
+        src_byte_current -= sizeof(word);
     }
 }
 
