@@ -79,6 +79,14 @@ public:
     class Interrupt : private Non_copyable
     {
     public:
+        ~Interrupt()
+        {
+            if (true == this->is_enabled())
+            {
+                this->disable();
+            }
+        }
+
         enum class Source
         {
             ram_err,
@@ -105,13 +113,28 @@ public:
 
         template<Mode mode> void start(const Context<mode>& a_ctx, const Callback_traits<mode>::Type& a_callback);
 
+        bool is_enabled() const
+        {
+            return 0 != NVIC_GetEnableIRQ(this->p_pka->irqn);
+        }
+
     private:
         Public_key_accelerator* p_pka;
         friend Public_key_accelerator;
     };
 
+    ~Public_key_accelerator()
+    {
+        if (true == this->is_enabled())
+        {
+            this->disable();
+        }
+    }
+
     void enable();
     void disable();
+
+    bool is_enabled() const;
 
     Pooling pooling;
     Interrupt interrupt;

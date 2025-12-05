@@ -136,6 +136,11 @@ void Public_key_accelerator::disable()
     bit::flag::set(&(PKA->CLRFR), PKA_CLRFR_PROCENDFC | PKA_CLRFR_RAMERRFC | PKA_CLRFR_ADDRERRFC);
 }
 
+bool Public_key_accelerator::is_enabled() const
+{
+    return PKA_CR_EN == bit::flag::get(PKA->CLRFR, PKA_CR_EN);
+}
+
 template<> Public_key_accelerator::Pooling::Result<Public_key_accelerator::ecdsa_verify>
 Public_key_accelerator::Pooling::execute(const Context<Mode::ecdsa_verify>& a_ctx, Milliseconds a_timeout)
 {
