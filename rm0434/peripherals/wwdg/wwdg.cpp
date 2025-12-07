@@ -8,7 +8,7 @@
 
 using namespace xmcu::soc::st::arm::m4::wb::rm0434::peripherals;
 
-void wwdg::enable(wwdg::window_t a_window)
+void wwdg::enable(wwdg::Window a_window)
 {
     WWDG->CFR = WWDG_CFR_WDGTB | a_window;
     WWDG->CR = WWDG_CR_WDGA | WWDG_CR_T;
@@ -17,11 +17,11 @@ void wwdg::enable(wwdg::window_t a_window)
 void wwdg::feed()
 {
     static constexpr uint32_t reload = WWDG_CR_T;
-    static_assert(reload <= window_max && reload >= window_min, "invalid reload value");
+    static_assert(reload <= s::max && reload >= s::min, "invalid reload value");
     WWDG->CR = WWDG_CR_WDGA | reload;
 }
 
-void wwdg::feed(wwdg::window_t a_reload)
+void wwdg::feed(wwdg::Window a_reload)
 {
     WWDG->CR = a_reload | WWDG_CR_WDGA;
 }
@@ -40,10 +40,26 @@ void wwdg::interrupt_enable(const xmcu::hal::IRQ_config& a_config)
     NVIC_EnableIRQ(WWDG_IRQn);
 }
 
+void wwdg::interrupt_disable()
+{
+    bit::flag::clear(&WWDG->CFR, WWDG_CFR_EWI);
+    NVIC_EnableIRQ(WWDG_IRQn);
+}
+
+// called from interrupt handler
 void wwdg::feed_int()
 {
     // This write operation must be performed a few instructions before the end of the ISR.
     // If it is the final instruction before exiting, it could cause an immediate re-entry into this same IRQ.
     WWDG->SR = 0; // clear interrupt flag
     wwdg::feed();
+}
+
+// called from interrupt handler
+void wwdg::feed_int(const Window& a_reload)
+{
+    // This write operation must be performed a few instructions before the end of the ISR.
+    // If it is the final instruction before exiting, it could cause an immediate re-entry into this same IRQ.
+    WWDG->SR = 0; // clear interrupt flag
+    feed(a_reload);
 }
