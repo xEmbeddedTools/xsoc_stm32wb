@@ -158,7 +158,7 @@ private:
     void* user_func = nullptr;
     void* user_data = nullptr;
 
-    void load_to_pka_ram(const Context<Public_key_accelerator::Mode::ecdsa_verify>& a_ctx) const;
+    void load(const Context<Public_key_accelerator::Mode::ecdsa_verify>& a_ctx) const;
 
     template<Mode mode> static void
     dispach_irq(Public_key_accelerator* a_p_this, Interrupt::Source a_source, void* a_p_user_func, void* a_p_user_data);
@@ -217,7 +217,7 @@ void Public_key_accelerator::Interrupt::start(const Context<mode>& a_ctx,
     this->p_pka->user_data = a_callback.p_user_data;
     this->p_pka->irq_dispatcher = &Public_key_accelerator::dispach_irq<mode>;
 
-    this->p_pka->load_to_pka_ram(a_ctx);
+    this->p_pka->load(a_ctx);
 
     bit::flag::set(&(PKA->CR), std::to_underlying(mode) | PKA_CR_PROCENDIE | PKA_CR_RAMERRIE | PKA_CR_ADDRERRIE);
     bit::flag::set(&(PKA->CR), PKA_CR_START);

@@ -151,7 +151,7 @@ Public_key_accelerator::Pooling::execute(const Context<Mode::ecdsa_verify>& a_ct
         return { .status = Status::busy, .is_signature_valid = false };
     }
 
-    this->p_pka->load_to_pka_ram(a_ctx);
+    this->p_pka->load(a_ctx);
 
     bit::flag::set(&(PKA->CR),
                    PKA_CR_MODE | PKA_CR_PROCENDIE | PKA_CR_RAMERRIE | PKA_CR_ADDRERRIE,
@@ -210,7 +210,7 @@ Public_key_accelerator::Pooling::execute(const Context<Mode::ecdsa_verify>& a_ct
     return result;
 }
 
-void Public_key_accelerator::load_to_pka_ram(
+void Public_key_accelerator::load(
     const Public_key_accelerator::Context<Public_key_accelerator::Mode::ecdsa_verify>& a_ctx) const
 {
     PKA->RAM[PKA_ECDSA_VERIF_IN_ORDER_NB_BITS] = get_optimal_bit_size(a_ctx.prime_order_size, *(a_ctx.p_prime_order));
