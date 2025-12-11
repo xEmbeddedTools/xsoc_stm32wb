@@ -27,6 +27,8 @@ public:
         static constexpr uint32_t max = 0x7F;
     };
     using Window = xmcu::Limited<uint32_t, s::min, s::max>;
+    using Interrupt_Callback_Function = void (*)();
+    static Interrupt_Callback_Function p_callback;
 
     static void enable(Window a_window = s::max);
 
@@ -34,7 +36,7 @@ public:
     static void feed(Window a_reload);
     static bool is_active();
 
-    static void interrupt_enable(const xmcu::hal::IRQ_config& a_config);
+    static void interrupt_enable(const xmcu::hal::IRQ_config& a_config, Interrupt_Callback_Function a_p_callback);
     static void interrupt_disable();
     static void feed_int();
     static void feed_int(const Window& a_reload);

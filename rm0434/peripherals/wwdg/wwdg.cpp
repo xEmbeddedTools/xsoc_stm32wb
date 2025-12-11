@@ -7,6 +7,7 @@
 #include <rm0434/peripherals/wwdg/wwdg.hpp>
 
 using namespace xmcu::soc::st::arm::m4::wb::rm0434::peripherals;
+wwdg::Interrupt_Callback_Function wwdg::p_callback = nullptr;
 
 void wwdg::enable(wwdg::Window a_window)
 {
@@ -31,8 +32,9 @@ bool wwdg::is_active()
     return xmcu::bit::is_any(WWDG->CR, WWDG_CR_WDGA);
 }
 
-void wwdg::interrupt_enable(const xmcu::hal::IRQ_config& a_config)
+void wwdg::interrupt_enable(const xmcu::hal::IRQ_config& a_config, Interrupt_Callback_Function a_p_callback)
 {
+    wwdg::p_callback = a_p_callback;
     bit::flag::set(&WWDG->CFR, WWDG_CFR_EWI);
 
     NVIC_SetPriority(WWDG_IRQn,
@@ -62,4 +64,12 @@ void wwdg::feed_int(const Window& a_reload)
     // If it is the final instruction before exiting, it could cause an immediate re-entry into this same IRQ.
     WWDG->SR = 0; // clear interrupt flag
     feed(a_reload);
+}
+
+extern "C" {
+void WWDG_IRQHandler()
+{
+    hkm_assert(nullptr != wwdg::p_callback);
+    wwdg::p_callback();
+}
 }
