@@ -21,19 +21,25 @@ namespace xmcu::soc::st::arm::m4::wb::rm0434::peripherals {
 class wwdg : private xmcu::non_constructible
 {
 public:
-    static constexpr uint32_t window_min = 0x40;
-    static constexpr uint32_t window_max = 0x7F;
-    using window_t = xmcu::Limited<uint32_t, window_min, window_max>;
+    struct s : xmcu::non_constructible
+    {
+        static constexpr uint32_t min = 0x40;
+        static constexpr uint32_t max = 0x7F;
+    };
+    using Window = xmcu::Limited<uint32_t, s::min, s::max>;
+    using Interrupt_Callback_Function = void (*)();
+    static Interrupt_Callback_Function p_callback;
 
-    static void enable(window_t a_window = window_max);
+    static void enable(Window a_window = s::max);
 
     static void feed();
-    static void feed(window_t reload);
+    static void feed(Window a_reload);
     static bool is_active();
 
-protected:
-    static void interrupt_enable(const xmcu::hal::IRQ_config& a_config);
+    static void interrupt_enable(const xmcu::hal::IRQ_config& a_config, Interrupt_Callback_Function a_p_callback);
+    static void interrupt_disable();
     static void feed_int();
+    static void feed_int(const Window& a_reload);
 };
 
 } // namespace xmcu::soc::st::arm::m4::wb::rm0434::peripherals
