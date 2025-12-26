@@ -15,6 +15,7 @@
 #include <soc/Scoped_guard.hpp>
 #include <soc/st/arm/m4/nvic.hpp>
 #include <soc/st/arm/m4/wb/rm0434/config.hpp>
+#include <soc/st/arm/m4/wb/rm0434/peripherals/internal_flash/internal_flash_ll.hpp>
 #include <xmcu/Duration.hpp>
 #include <xmcu/Limited.hpp>
 #include <xmcu/Not_null.hpp>

@@ -142,7 +142,7 @@ void GPIO::Out::Pin::toggle_level()
 {
     hkm_assert(nullptr != this->p_port && 0xFFu != this->id);
 
-    bit::toggle(&(this->p_port->p_registers->odr), this->id);
+    bit::toggle(&(this->p_port->p_registers->odr), Limited<std::uint32_t, 0u, 15u>{ this->id });
 }
 
 void GPIO::Out::Pin::set_type(Type a_type)
