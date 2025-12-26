@@ -38,7 +38,7 @@ bool is_tx_error(ll::usart::Registers* a_p_registers)
 USART::Event_flag get_Event_flag_and_clear(ll::usart::ICR* a_p_icr, ll::usart::ISR a_isr)
 {
     USART::Event_flag pending_events = USART::Event_flag::none;
-    ll::usart::ICR clear_mask = ll::usart::ICR::none;
+    ll::usart::ICR::Flag clear_mask = ll::usart::ICR::none;
 
     if (true == bit::flag::is(a_isr, ll::usart::ISR::idle))
     {
@@ -137,7 +137,7 @@ USART::Event_flag get_pending_events(ll::usart::ISR a_isr)
 
 void clear_events(ll::usart::ICR* a_p_icr, USART::Event_flag a_event_mask)
 {
-    ll::usart::ICR clear_mask = ll::usart::ICR::none;
+    ll::usart::ICR::Flag clear_mask = ll::usart::ICR::none;
 
     if (USART::Event_flag::none != (a_event_mask & USART::Event_flag::idle))
     {
@@ -693,7 +693,7 @@ void USART::enable(const Clock_config& a_clock_config,
 
     ::enable(this->p_registers, a_clock_config, a_transceiving_config, a_frame_format, a_low_power_wakeup);
 
-    const ll::usart::ISR flags_to_wait =
+    const ll::usart::ISR::Data flags_to_wait =
         (true == bit::flag::is(this->p_registers->cr1, ll::usart::CR1::re) ? ll::usart::ISR::reack :
                                                                              ll::usart::ISR::none) |
         (true == bit::flag::is(this->p_registers->cr1, ll::usart::CR1::te) ? ll::usart::ISR::teack :
@@ -732,7 +732,7 @@ bool USART::enable(const Clock_config& a_clock_config,
 
     ::enable(this->p_registers, a_clock_config, a_transceiving_config, a_frame_format, a_low_power_wakeup);
 
-    const ll::usart::ISR flags_to_wait =
+    const ll::usart::ISR::Data flags_to_wait =
         (true == bit::flag::is(this->p_registers->cr1, ll::usart::CR1::re) ? ll::usart::ISR::reack :
                                                                              ll::usart::ISR::none) |
         (true == bit::flag::is(this->p_registers->cr1, ll::usart::CR1::te) ? ll::usart::ISR::teack :
@@ -948,7 +948,7 @@ void LPUART::enable(const Clock_config& a_clock_config,
 
     ::enable(this->p_registers, a_clock_config, a_transceiving_config, a_frame_format, a_low_power_wakeup);
 
-    const ll::usart::ISR flags_to_wait =
+    const ll::usart::ISR::Data flags_to_wait =
         (true == bit::flag::is(this->p_registers->cr1, ll::usart::CR1::re) ? ll::usart::ISR::reack :
                                                                              ll::usart::ISR::none) |
         (true == bit::flag::is(this->p_registers->cr1, ll::usart::CR1::te) ? ll::usart::ISR::teack :
@@ -991,7 +991,7 @@ bool LPUART::enable(const Clock_config& a_clock_config,
 
     ::enable(this->p_registers, a_clock_config, a_transceiving_config, a_frame_format, a_low_power_wakeup);
 
-    const ll::usart::ISR flags_to_wait =
+    const ll::usart::ISR::Data flags_to_wait =
         (true == bit::flag::is(this->p_registers->cr1, ll::usart::CR1::re) ? ll::usart::ISR::reack :
                                                                              ll::usart::ISR::none) |
         (true == bit::flag::is(this->p_registers->cr1, ll::usart::CR1::te) ? ll::usart::ISR::teack :
