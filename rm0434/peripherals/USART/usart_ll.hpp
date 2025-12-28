@@ -144,6 +144,8 @@ struct usart : public usart_base
 public:
     struct CR1
     {
+        enum class Data : std::uint32_t;
+
         enum class Flag : std::uint32_t
         {
             none = 0x0u,
@@ -179,8 +181,6 @@ public:
 
         using enum Flag;
         using enum Shift_5;
-
-        enum class Data : std::uint32_t;
 
         CR1& operator=(Flag value_a)
         {
@@ -529,6 +529,8 @@ public:
     };
     struct GTPR
     {
+        enum class Data : std::uint32_t;
+
         enum class Shift_8 : std::uint32_t
         {
             psc = USART_GTPR_PSC_Pos,
@@ -536,8 +538,6 @@ public:
         };
 
         using enum Shift_8;
-
-        enum class Data : std::uint32_t;
 
         GTPR& operator=(Data value_a)
         {
@@ -550,6 +550,8 @@ public:
     };
     struct RTOR
     {
+        enum class Data : std::uint32_t;
+
         enum class Shift_23 : std::uint32_t
         {
             rto = USART_RTOR_RTO_Pos
@@ -563,8 +565,6 @@ public:
         using enum Shift_23;
         using enum Shift_8;
 
-        enum class Data : std::uint32_t;
-
         RTOR& operator=(Data value_a)
         {
             this->v = value_a;
@@ -576,6 +576,8 @@ public:
     };
     struct RQR
     {
+        enum class Data : std::uint32_t;
+
         enum class Flag : std::uint32_t
         {
             abrrq = USART_RQR_ABRRQ,
@@ -586,8 +588,6 @@ public:
         };
 
         using enum Flag;
-
-        enum class Data : std::uint32_t;
 
         RQR& operator=(Data value_a)
         {
@@ -611,6 +611,8 @@ public:
     };
     struct ISR
     {
+        enum class Data : std::uint32_t;
+
         enum class Flag : std::uint32_t
         {
             none = 0x0u,
@@ -649,8 +651,6 @@ public:
 
         using enum Flag;
 
-        enum class Data : std::uint32_t;
-
         ISR()
             : v(static_cast<Data>(0x0u))
         {
@@ -666,6 +666,8 @@ public:
     };
     struct ICR
     {
+        enum class Data : std::uint32_t;
+
         enum class Flag : std::uint32_t
         {
             none = 0x0u,
@@ -687,8 +689,6 @@ public:
         };
 
         using enum Flag;
-
-        enum class Data : std::uint32_t;
 
         ICR& operator=(Data value_a)
         {
@@ -752,6 +752,8 @@ public:
     };
     struct PRESC
     {
+        enum class Data : std::uint32_t;
+
         enum class Flag : std::uint32_t
         {
             _1 = 0x0u,
@@ -769,8 +771,6 @@ public:
         };
 
         using enum Flag;
-
-        enum class Data : std::uint32_t;
 
         PRESC& operator=(Flag value_a)
         {
