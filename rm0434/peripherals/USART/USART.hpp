@@ -54,8 +54,8 @@ public:
     {
         none = 0x1u,
         character_matched = 0x0u,
-        start_bit = static_cast<std::uint32_t>(0x2u << ll::usart::CR3::wus),
-        rx_not_empty = static_cast<std::uint32_t>((0x1u << ll::usart::CR3::wus) | (0x2u << ll::usart::CR3::wus))
+        start_bit = static_cast<std::uint32_t>(ll::usart::CR3::wus.start_bit_detection),
+        rx_not_empty = static_cast<std::uint32_t>(ll::usart::CR3::wus.rxne)
     };
 
     struct Clock_config
@@ -89,10 +89,10 @@ public:
         };
         enum class Stop_bits : std::uint32_t
         {
-            _0_5 = static_cast<std::uint32_t>(0x1u << ll::usart::CR2::stop),
-            _1 = 0x0u,
-            _1_5 = static_cast<std::uint32_t>((0x1u << ll::usart::CR2::stop) | (0x2u << ll::usart::CR2::stop)),
-            _2 = static_cast<std::uint32_t>(0x2u << ll::usart::CR2::stop),
+            _0_5 = static_cast<std::uint32_t>(ll::usart::CR2::stop._0_5),
+            _1_0 = 0x0u,
+            _1_5 = static_cast<std::uint32_t>(ll::usart::CR2::stop._1_5),
+            _2_0 = static_cast<std::uint32_t>(ll::usart::CR2::stop._2_0),
         };
         enum class Flow_control_flag : std::uint32_t
         {

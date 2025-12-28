@@ -88,6 +88,56 @@
         return false == (left_a == right_a);                                                \
     }
 
+#define XSOC_USART_LL_GENERATE_BITMASK_OPERATORS_FRIEND(ReturnEnumType, LeftEnumType, RightEnumType)     \
+                                                                                                         \
+    friend constexpr ReturnEnumType operator|(LeftEnumType left_a, RightEnumType right_a) noexcept       \
+    {                                                                                                    \
+        return static_cast<ReturnEnumType>(static_cast<std::underlying_type_t<LeftEnumType>>(left_a) |   \
+                                           static_cast<std::underlying_type_t<RightEnumType>>(right_a)); \
+    }                                                                                                    \
+                                                                                                         \
+    friend constexpr ReturnEnumType operator&(LeftEnumType left_a, RightEnumType right_a) noexcept       \
+    {                                                                                                    \
+        return static_cast<ReturnEnumType>(static_cast<std::underlying_type_t<LeftEnumType>>(left_a) &   \
+                                           static_cast<std::underlying_type_t<RightEnumType>>(right_a)); \
+    }                                                                                                    \
+                                                                                                         \
+    friend constexpr ReturnEnumType operator^(LeftEnumType left_a, RightEnumType right_a) noexcept       \
+    {                                                                                                    \
+        return static_cast<ReturnEnumType>(static_cast<std::underlying_type_t<LeftEnumType>>(left_a) ^   \
+                                           static_cast<std::underlying_type_t<RightEnumType>>(right_a)); \
+    }
+
+#define XSOC_USART_LL_GENERATE_COMPARISON_OPERATORS_FRIEND(LeftEnumType, RightEnumType)     \
+    friend constexpr bool operator==(LeftEnumType left_a, RightEnumType right_a)            \
+    {                                                                                       \
+        return (static_cast<std::uint32_t>(left_a) == static_cast<std::uint32_t>(right_a)); \
+    }                                                                                       \
+    friend constexpr bool operator==(RightEnumType left_a, LeftEnumType right_a)            \
+    {                                                                                       \
+        return (static_cast<std::uint32_t>(left_a) == static_cast<std::uint32_t>(right_a)); \
+    }                                                                                       \
+    friend constexpr bool operator!=(LeftEnumType left_a, RightEnumType right_a)            \
+    {                                                                                       \
+        return false == (left_a == right_a);                                                \
+    }                                                                                       \
+    friend constexpr bool operator!=(RightEnumType left_a, LeftEnumType right_a)            \
+    {                                                                                       \
+        return false == (left_a == right_a);                                                \
+    }
+
+#define XSOC_USART_LL_GENERATE_BITMASK_UNARY_OPERATORS_FRIEND(EnumType) \
+    friend constexpr EnumType operator~(EnumType right_a) noexcept      \
+    {                                                                   \
+        using Type = std::underlying_type_t<EnumType>;                  \
+        return static_cast<EnumType>(~static_cast<Type>(right_a));      \
+    }                                                                   \
+    friend constexpr bool operator!(EnumType right_a) noexcept          \
+    {                                                                   \
+        using Type = std::underlying_type_t<EnumType>;                  \
+        return static_cast<Type>(right_a) == 0;                         \
+    }
+
 namespace xmcu::soc::st::arm::m4::wb::rm0434::peripherals::ll {
 struct usart : public usart_base
 {
@@ -153,6 +203,55 @@ public:
     };
     struct CR2
     {
+    private:
+        struct STOP
+        {
+            enum class Flag : std::uint32_t
+            {
+                _1_5 = USART_CR2_STOP_0 | USART_CR2_STOP_1,
+                _2_0 = USART_CR2_STOP_1,
+                _0_5 = USART_CR2_STOP_0,
+                _1_0 = 0x0u
+            };
+            enum class Mask : std::uint32_t
+            {
+                mask = 0x3u << USART_CR2_STOP_Pos
+            };
+
+            using enum Flag;
+            using enum Mask;
+
+            operator Mask() const
+            {
+                return this->mask;
+            }
+        };
+        struct ABRMOD
+        {
+            enum class Flag : std::uint32_t
+            {
+                start_bit = 0x0u,
+                falling_edge_to_falling_edge = USART_CR2_ABRMODE_0,
+                frame_0x75_detection = USART_CR2_ABRMODE_1,
+                frame_0x55_detection = USART_CR2_ABRMODE_0 | USART_CR2_ABRMODE_1
+            };
+            enum class Mask : std::uint32_t
+            {
+                mask = 0x3u << USART_CR2_ABRMODE_Pos
+            };
+
+            using enum Flag;
+            using enum Mask;
+
+            operator Mask() const
+            {
+                return this->mask;
+            }
+        };
+
+    public:
+        enum class Data : std::uint32_t;
+
         enum class Flag : std::uint32_t
         {
             none = 0x0u,
@@ -174,21 +273,16 @@ public:
             abren = USART_CR2_ABREN,
             rtoen = USART_CR2_RTOEN
         };
-        enum class Shift_2 : std::uint32_t
-        {
-            stop = USART_CR2_STOP_Pos,
-            abrmod = USART_CR2_ABRMODE_Pos
-        };
         enum class Shift_8 : std::uint32_t
         {
             add = USART_CR2_ADD_Pos
         };
 
-        using enum Flag;
-        using enum Shift_2;
-        using enum Shift_8;
+        static STOP stop;
+        static ABRMOD abrmod;
 
-        enum class Data : std::uint32_t;
+        using enum Flag;
+        using enum Shift_8;
 
         CR2& operator=(Flag value_a)
         {
@@ -206,11 +300,113 @@ public:
             return this->v;
         }
 
+        // STOP
+        XSOC_USART_LL_GENERATE_BITMASK_OPERATORS_FRIEND(Data, Flag, STOP::Flag);
+        XSOC_USART_LL_GENERATE_BITMASK_OPERATORS_FRIEND(Data, STOP::Flag, Flag);
+        XSOC_USART_LL_GENERATE_BITMASK_OPERATORS_FRIEND(Data, Data, STOP::Flag);
+        XSOC_USART_LL_GENERATE_BITMASK_OPERATORS_FRIEND(Data, STOP::Flag, Data);
+        XSOC_USART_LL_GENERATE_BITMASK_OPERATORS_FRIEND(Data, Data, STOP::Mask);
+        XSOC_USART_LL_GENERATE_BITMASK_OPERATORS_FRIEND(Data, STOP::Mask, Data);
+
+        XSOC_USART_LL_GENERATE_BITMASK_UNARY_OPERATORS_FRIEND(STOP::Flag);
+        XSOC_USART_LL_GENERATE_BITMASK_UNARY_OPERATORS_FRIEND(STOP::Mask);
+
+        XSOC_USART_LL_GENERATE_COMPARISON_OPERATORS_FRIEND(Data, STOP::Mask);
+        XSOC_USART_LL_GENERATE_COMPARISON_OPERATORS_FRIEND(Data, STOP::Flag);
+
+        // ABRMOD
+        XSOC_USART_LL_GENERATE_BITMASK_OPERATORS_FRIEND(Data, Flag, ABRMOD::Flag);
+        XSOC_USART_LL_GENERATE_BITMASK_OPERATORS_FRIEND(Data, ABRMOD::Flag, Flag);
+        XSOC_USART_LL_GENERATE_BITMASK_OPERATORS_FRIEND(Data, Data, ABRMOD::Flag);
+        XSOC_USART_LL_GENERATE_BITMASK_OPERATORS_FRIEND(Data, ABRMOD::Flag, Data);
+        XSOC_USART_LL_GENERATE_BITMASK_OPERATORS_FRIEND(Data, Data, ABRMOD::Mask);
+        XSOC_USART_LL_GENERATE_BITMASK_OPERATORS_FRIEND(Data, ABRMOD::Mask, Data);
+
+        XSOC_USART_LL_GENERATE_BITMASK_UNARY_OPERATORS_FRIEND(ABRMOD::Flag);
+        XSOC_USART_LL_GENERATE_BITMASK_UNARY_OPERATORS_FRIEND(ABRMOD::Mask);
+
+        XSOC_USART_LL_GENERATE_COMPARISON_OPERATORS_FRIEND(Data, ABRMOD::Mask);
+        XSOC_USART_LL_GENERATE_COMPARISON_OPERATORS_FRIEND(Data, ABRMOD::Flag);
+
     private:
         volatile Data v;
     };
     struct CR3
     {
+    private:
+        struct TXFTCFG
+        {
+            enum class Flag : std::uint32_t
+            {
+                _1_div_8 = 0x0u,
+                _1_div_4 = USART_CR3_TXFTCFG_0,
+                _1_div_2 = USART_CR3_TXFTCFG_1,
+                _3_div_4 = USART_CR3_TXFTCFG_0 | USART_CR3_TXFTCFG_1,
+                _7_div_8 = USART_CR3_TXFTCFG_2,
+                empty = USART_CR3_TXFTCFG_2 | USART_CR3_TXFTCFG_0
+            };
+            enum class Mask : std::uint32_t
+            {
+                mask = USART_CR3_TXFTCFG
+            };
+
+            using enum Flag;
+            using enum Mask;
+
+            operator Mask() const
+            {
+                return this->mask;
+            }
+        };
+        struct RXFTCFG
+        {
+            enum class Flag : std::uint32_t
+            {
+                _1_div_8 = 0x0u,
+                _1_div_4 = USART_CR3_RXFTCFG_0,
+                _1_div_2 = USART_CR3_RXFTCFG_1,
+                _3_div_4 = USART_CR3_RXFTCFG_0 | USART_CR3_RXFTCFG_1,
+                _7_div_8 = USART_CR3_RXFTCFG_2,
+                full = USART_CR3_RXFTCFG_2 | USART_CR3_RXFTCFG_0
+            };
+            enum class Mask : std::uint32_t
+            {
+                mask = USART_CR3_RXFTCFG
+            };
+
+            using enum Flag;
+            using enum Mask;
+
+            operator Mask() const
+            {
+                return this->mask;
+            }
+        };
+        struct WUS
+        {
+            enum class Flag : std::uint32_t
+            {
+                address_match = 0x0u,
+                start_bit_detection = USART_CR3_WUS_1,
+                rxne = USART_CR3_WUS_0 | USART_CR3_WUS_1
+            };
+            enum class Mask : std::uint32_t
+            {
+                mask = 0x3u << USART_CR2_STOP_Pos
+            };
+
+            using enum Flag;
+            using enum Mask;
+
+            operator Mask() const
+            {
+                return this->mask;
+            }
+        };
+
+    public:
+        enum class Data : std::uint32_t;
+
         enum class Flag : std::uint32_t
         {
             none = 0x0u,
@@ -234,22 +430,17 @@ public:
             txftie = USART_CR3_TXFTIE,
             tcbgtie = USART_CR3_TCBGTIE,
         };
-        enum class Shift_2 : std::uint32_t
-        {
-            wus = USART_CR3_WUS_Pos,
-            rxftcfg = USART_CR3_RXFTCFG_Pos,
-            txftcfg = USART_CR3_TXFTCFG_Pos
-        };
         enum class Shift_3 : std::uint32_t
         {
             scarcnt = USART_CR3_SCARCNT_Pos
         };
 
         using enum Flag;
-        using enum Shift_2;
         using enum Shift_3;
 
-        enum class Data : std::uint32_t;
+        static TXFTCFG txftcfg;
+        static RXFTCFG rxftcfg;
+        static WUS wus;
 
         CR3& operator=(Flag value_a)
         {
@@ -266,6 +457,48 @@ public:
         {
             return this->v;
         }
+
+        // TXFTCFG
+        XSOC_USART_LL_GENERATE_BITMASK_OPERATORS_FRIEND(Data, Flag, TXFTCFG::Flag);
+        XSOC_USART_LL_GENERATE_BITMASK_OPERATORS_FRIEND(Data, TXFTCFG::Flag, Flag);
+        XSOC_USART_LL_GENERATE_BITMASK_OPERATORS_FRIEND(Data, Data, TXFTCFG::Flag);
+        XSOC_USART_LL_GENERATE_BITMASK_OPERATORS_FRIEND(Data, TXFTCFG::Flag, Data);
+        XSOC_USART_LL_GENERATE_BITMASK_OPERATORS_FRIEND(Data, Data, TXFTCFG::Mask);
+        XSOC_USART_LL_GENERATE_BITMASK_OPERATORS_FRIEND(Data, TXFTCFG::Mask, Data);
+
+        XSOC_USART_LL_GENERATE_BITMASK_UNARY_OPERATORS_FRIEND(TXFTCFG::Flag);
+        XSOC_USART_LL_GENERATE_BITMASK_UNARY_OPERATORS_FRIEND(TXFTCFG::Mask);
+
+        XSOC_USART_LL_GENERATE_COMPARISON_OPERATORS_FRIEND(Data, TXFTCFG::Mask);
+        XSOC_USART_LL_GENERATE_COMPARISON_OPERATORS_FRIEND(Data, TXFTCFG::Flag);
+
+        // RXFTCFG
+        XSOC_USART_LL_GENERATE_BITMASK_OPERATORS_FRIEND(Data, Flag, RXFTCFG::Flag);
+        XSOC_USART_LL_GENERATE_BITMASK_OPERATORS_FRIEND(Data, RXFTCFG::Flag, Flag);
+        XSOC_USART_LL_GENERATE_BITMASK_OPERATORS_FRIEND(Data, Data, RXFTCFG::Flag);
+        XSOC_USART_LL_GENERATE_BITMASK_OPERATORS_FRIEND(Data, RXFTCFG::Flag, Data);
+        XSOC_USART_LL_GENERATE_BITMASK_OPERATORS_FRIEND(Data, Data, RXFTCFG::Mask);
+        XSOC_USART_LL_GENERATE_BITMASK_OPERATORS_FRIEND(Data, RXFTCFG::Mask, Data);
+
+        XSOC_USART_LL_GENERATE_BITMASK_UNARY_OPERATORS_FRIEND(RXFTCFG::Flag);
+        XSOC_USART_LL_GENERATE_BITMASK_UNARY_OPERATORS_FRIEND(RXFTCFG::Mask);
+
+        XSOC_USART_LL_GENERATE_COMPARISON_OPERATORS_FRIEND(Data, RXFTCFG::Mask);
+        XSOC_USART_LL_GENERATE_COMPARISON_OPERATORS_FRIEND(Data, RXFTCFG::Flag);
+
+        // WUS
+        XSOC_USART_LL_GENERATE_BITMASK_OPERATORS_FRIEND(Data, Flag, WUS::Flag);
+        XSOC_USART_LL_GENERATE_BITMASK_OPERATORS_FRIEND(Data, WUS::Flag, Flag);
+        XSOC_USART_LL_GENERATE_BITMASK_OPERATORS_FRIEND(Data, Data, WUS::Flag);
+        XSOC_USART_LL_GENERATE_BITMASK_OPERATORS_FRIEND(Data, WUS::Flag, Data);
+        XSOC_USART_LL_GENERATE_BITMASK_OPERATORS_FRIEND(Data, Data, WUS::Mask);
+        XSOC_USART_LL_GENERATE_BITMASK_OPERATORS_FRIEND(Data, WUS::Mask, Data);
+
+        XSOC_USART_LL_GENERATE_BITMASK_UNARY_OPERATORS_FRIEND(WUS::Flag);
+        XSOC_USART_LL_GENERATE_BITMASK_UNARY_OPERATORS_FRIEND(WUS::Mask);
+
+        XSOC_USART_LL_GENERATE_COMPARISON_OPERATORS_FRIEND(Data, WUS::Mask);
+        XSOC_USART_LL_GENERATE_COMPARISON_OPERATORS_FRIEND(Data, WUS::Flag);
 
     private:
         volatile Data v;
@@ -521,15 +754,21 @@ public:
     {
         enum class Flag : std::uint32_t
         {
-            none = 0x0u
-        };
-        enum class Shift_4 : std::uint32_t
-        {
-            prescaler = USART_PRESC_PRESCALER_Pos,
+            _1 = 0x0u,
+            _2 = USART_PRESC_PRESCALER_0,
+            _4 = USART_PRESC_PRESCALER_1,
+            _6 = USART_PRESC_PRESCALER_0 | USART_PRESC_PRESCALER_1,
+            _8 = USART_PRESC_PRESCALER_2,
+            _10 = USART_PRESC_PRESCALER_0 | USART_PRESC_PRESCALER_2,
+            _12 = USART_PRESC_PRESCALER_1 | USART_PRESC_PRESCALER_2,
+            _16 = USART_PRESC_PRESCALER_0 | USART_PRESC_PRESCALER_1 | USART_PRESC_PRESCALER_2,
+            _32 = USART_PRESC_PRESCALER_3,
+            _64 = USART_PRESC_PRESCALER_0 | USART_PRESC_PRESCALER_3,
+            _128 = USART_PRESC_PRESCALER_1 | USART_PRESC_PRESCALER_3,
+            _256 = USART_PRESC_PRESCALER_0 | USART_PRESC_PRESCALER_1 | USART_PRESC_PRESCALER_3
         };
 
         using enum Flag;
-        using enum Shift_4;
 
         enum class Data : std::uint32_t;
 
@@ -611,10 +850,6 @@ XSOC_USART_LL_GENERATE_BITMASK_UNARY_OPERATORS(usart::CR2::Flag);
 XSOC_USART_LL_GENERATE_BITMASK_UNARY_OPERATORS(usart::CR2::Data);
 XSOC_USART_LL_GENERATE_COMPARISON_OPERATORS(usart::CR2::Flag, usart::CR2::Data);
 
-constexpr usart::CR2::Data operator<<(Limited<std::uint32_t, 0x0u, 0x3u> left_a, usart::CR2::Shift_2 right_a)
-{
-    return static_cast<usart::CR2::Data>(left_a.get() << static_cast<std::uint32_t>(right_a));
-}
 constexpr usart::CR2::Data operator<<(Limited<std::uint32_t, 0x0u, 0xFu> left_a, usart::CR2::Shift_8 right_a)
 {
     return static_cast<usart::CR2::Data>(left_a.get() << static_cast<std::uint32_t>(right_a));
@@ -633,10 +868,6 @@ XSOC_USART_LL_GENERATE_BITMASK_UNARY_OPERATORS(usart::CR3::Flag);
 XSOC_USART_LL_GENERATE_BITMASK_UNARY_OPERATORS(usart::CR3::Data);
 XSOC_USART_LL_GENERATE_COMPARISON_OPERATORS(usart::CR3::Flag, usart::CR3::Data);
 
-constexpr usart::CR3::Data operator<<(Limited<std::uint32_t, 0x0u, 0x3u> left_a, usart::CR3::Shift_2 right_a)
-{
-    return static_cast<usart::CR3::Data>(left_a.get() << static_cast<std::uint32_t>(right_a));
-}
 constexpr usart::CR3::Data operator<<(Limited<std::uint32_t, 0x0u, 0xFu> left_a, usart::CR3::Shift_3 right_a)
 {
     return static_cast<usart::CR3::Data>(left_a.get() << static_cast<std::uint32_t>(right_a));
@@ -706,58 +937,5 @@ XSOC_USART_LL_GENERATE_BITMASK_UNARY_OPERATORS(usart::ICR::Data);
 XSOC_USART_LL_GENERATE_COMPARISON_OPERATORS(usart::ICR::Flag, usart::ICR::Data);
 
 // PRESC
-XSOC_USART_LL_GENERATE_BITMASK_OPERATORS(usart::PRESC::Data, usart::PRESC::Flag, usart::PRESC::Flag);
-XSOC_USART_LL_GENERATE_BITMASK_OPERATORS(usart::PRESC::Data, usart::PRESC::Data, usart::PRESC::Data);
-XSOC_USART_LL_GENERATE_BITMASK_OPERATORS(usart::PRESC::Data, usart::PRESC::Data, usart::PRESC::Flag);
-XSOC_USART_LL_GENERATE_BITMASK_OPERATORS(usart::PRESC::Data, usart::PRESC::Flag, usart::PRESC::Data);
-
-XSOC_USART_LL_GENERATE_BITMASK_ASSIGMENT_OPERATORS(usart::PRESC::Flag);
-XSOC_USART_LL_GENERATE_BITMASK_ASSIGMENT_OPERATORS(usart::PRESC::Data);
-
-XSOC_USART_LL_GENERATE_BITMASK_UNARY_OPERATORS(usart::PRESC::Flag);
-XSOC_USART_LL_GENERATE_BITMASK_UNARY_OPERATORS(usart::PRESC::Data);
 XSOC_USART_LL_GENERATE_COMPARISON_OPERATORS(usart::PRESC::Flag, usart::PRESC::Data);
-
-constexpr usart::PRESC::Data operator<<(Limited<std::uint32_t, 0x0u, 0xBu> left_a, usart::PRESC::Shift_4 right_a)
-{
-    return static_cast<usart::PRESC::Data>(left_a.get() << static_cast<std::uint32_t>(right_a));
-}
 } // namespace xmcu::soc::st::arm::m4::wb::rm0434::peripherals::ll
-
-namespace xmcu {
-// CR1
-template<> [[nodiscard]] inline xmcu::soc::st::arm::m4::wb::rm0434::peripherals::ll::usart::CR1::Flag
-bit::flag::get(xmcu::soc::st::arm::m4::wb::rm0434::peripherals::ll::usart::CR1 register_a,
-               xmcu::soc::st::arm::m4::wb::rm0434::peripherals::ll::usart::CR1::Flag mask_a)
-{
-    return static_cast<xmcu::soc::st::arm::m4::wb::rm0434::peripherals::ll::usart::CR1::Flag>(register_a & mask_a);
-}
-// CR2
-template<> [[nodiscard]] inline xmcu::soc::st::arm::m4::wb::rm0434::peripherals::ll::usart::CR2::Flag
-bit::flag::get(xmcu::soc::st::arm::m4::wb::rm0434::peripherals::ll::usart::CR2 register_a,
-               xmcu::soc::st::arm::m4::wb::rm0434::peripherals::ll::usart::CR2::Flag mask_a)
-{
-    return static_cast<xmcu::soc::st::arm::m4::wb::rm0434::peripherals::ll::usart::CR2::Flag>(register_a & mask_a);
-}
-// CR3
-template<> [[nodiscard]] inline xmcu::soc::st::arm::m4::wb::rm0434::peripherals::ll::usart::CR3::Flag
-bit::flag::get(xmcu::soc::st::arm::m4::wb::rm0434::peripherals::ll::usart::CR3 register_a,
-               xmcu::soc::st::arm::m4::wb::rm0434::peripherals::ll::usart::CR3::Flag mask_a)
-{
-    return static_cast<xmcu::soc::st::arm::m4::wb::rm0434::peripherals::ll::usart::CR3::Flag>(register_a & mask_a);
-}
-// ISR
-template<> [[nodiscard]] inline xmcu::soc::st::arm::m4::wb::rm0434::peripherals::ll::usart::ISR::Flag
-bit::flag::get(xmcu::soc::st::arm::m4::wb::rm0434::peripherals::ll::usart::ISR register_a,
-               xmcu::soc::st::arm::m4::wb::rm0434::peripherals::ll::usart::ISR::Flag mask_a)
-{
-    return static_cast<xmcu::soc::st::arm::m4::wb::rm0434::peripherals::ll::usart::ISR::Flag>(register_a & mask_a);
-}
-// ICR
-template<> [[nodiscard]] inline xmcu::soc::st::arm::m4::wb::rm0434::peripherals::ll::usart::ICR::Flag
-bit::flag::get(xmcu::soc::st::arm::m4::wb::rm0434::peripherals::ll::usart::ICR register_a,
-               xmcu::soc::st::arm::m4::wb::rm0434::peripherals::ll::usart::ICR::Flag mask_a)
-{
-    return static_cast<xmcu::soc::st::arm::m4::wb::rm0434::peripherals::ll::usart::ICR::Flag>(register_a & mask_a);
-}
-} // namespace xmcu
