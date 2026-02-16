@@ -674,8 +674,8 @@ template<> void GPIO::mco::enable<hsi48>(Divider a_divider)
 }
 void GPIO::mco::disable()
 {
-    bit::flag::clear(&(RCC->CFGR), RCC_CFGR_MCOPRE);
     bit::flag::clear(&(RCC->CFGR), RCC_CFGR_MCOSEL);
+    bit::flag::clear(&(RCC->CFGR), RCC_CFGR_MCOPRE);
 }
 
 template<> void GPIO::lsco::enable<lsi>()

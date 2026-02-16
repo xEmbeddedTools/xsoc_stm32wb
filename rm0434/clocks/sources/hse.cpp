@@ -37,14 +37,14 @@ bool hse::enable(Milliseconds a_timeout)
 }
 void hse::disable()
 {
-    bit::flag::set(&(RCC->CR), RCC_CR_HSEON);
+    bit::flag::clear(&(RCC->CR), RCC_CR_HSEON);
     wait_until::all_bits_are_cleared(RCC->CR, RCC_CR_HSERDY);
 }
 bool hse::disable(Milliseconds a_timeout)
 {
     const std::uint64_t start = tick_counter<Milliseconds>::get();
 
-    bit::flag::set(&(RCC->CR), RCC_CR_HSEON);
+    bit::flag::clear(&(RCC->CR), RCC_CR_HSEON);
     return wait_until::all_bits_are_cleared(
         RCC->CR, RCC_CR_HSERDY, a_timeout.get() - (tick_counter<Milliseconds>::get() - start));
 }
