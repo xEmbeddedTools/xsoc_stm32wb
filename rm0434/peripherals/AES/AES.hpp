@@ -11,6 +11,7 @@
 // xmcu
 #include <rm0434/config.hpp>
 #include <rm0434/rcc.hpp>
+#include <soc/peripheral.hpp>
 #include <xmcu/Duration.hpp>
 #include <xmcu/Non_copyable.hpp>
 #include <xmcu/bit.hpp>
@@ -111,14 +112,21 @@ template<> struct AES::Context<AES::Mode::ecb_encrypt>
     AES::Key_size  key_size;
     AES::Data_type data_type = AES::Data_type::byte;
 
-    const std::uint32_t* p_key;    // Pointer to Key (4 or 8 words)
-    const std::uint8_t*  p_input;  // Plaintext (Must be multiple of 16 bytes)
-    std::uint8_t*        p_output; // Ciphertext buffer
-    std::size_t          size;     // Size in bytes
+    const std::uint32_t* p_key;
+    const std::uint8_t*  p_input;
+    std::uint8_t*        p_output;
+    std::size_t          size;
 };
 
-template<> struct AES::Context<AES::Mode::ecb_decrypt> : public AES::Context<AES::Mode::ecb_encrypt>
+template<> struct AES::Context<AES::Mode::ecb_decrypt>
 {
+    AES::Key_size  key_size;
+    AES::Data_type data_type = AES::Data_type::byte;
+
+    const std::uint32_t* p_key;
+    const std::uint8_t*  p_input;
+    std::uint8_t*        p_output;
+    std::size_t          size;
 };
 
 template<> struct AES::Pooling::Result<AES::Mode::ecb_encrypt>
@@ -126,8 +134,9 @@ template<> struct AES::Pooling::Result<AES::Mode::ecb_encrypt>
     AES::Pooling::Status status = AES::Pooling::Status::timeout;
 };
 
-template<> struct AES::Pooling::Result<AES::Mode::ecb_decrypt> : AES::Pooling::Result<AES::Mode::ecb_encrypt>
+template<> struct AES::Pooling::Result<AES::Mode::ecb_decrypt>
 {
+    AES::Pooling::Status status = AES::Pooling::Status::timeout;
 };
 
 } // namespace xmcu::soc::st::arm::m4::wb::rm0434::peripherals
