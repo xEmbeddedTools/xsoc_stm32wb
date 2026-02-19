@@ -5,6 +5,9 @@
  *  Licensed under the Apache License, Version 2.0. See LICENSE file in the project root for details.
  */
 
+// std
+#include <span>
+
 // external
 #include <stm32wbxx.h>
 
@@ -81,11 +84,33 @@ public:
 
         using enum Status;
 
-        template<Mode mode> Result<mode> execute(const Context<mode>& a_ctx, xmcu::Milliseconds a_timeout);
+        template<Mode mode> Status init(const std::uint32_t* a_p_key,
+                                        Key_size             a_key_size,
+                                        Data_type            a_data_type,
+                                        xmcu::Milliseconds   a_timeout = 10_ms);
+
+        template<Mode mode> Status init(const std::uint32_t*          a_p_key,
+                                        const std::uint32_t*          a_p_iv,
+                                        std::span<const std::uint8_t> a_header,
+                                        Key_size                      a_key_size,
+                                        Data_type                     a_data_type,
+                                        xmcu::Milliseconds            a_timeout = 10_ms);
+
+        template<Mode mode> Status process(const std::uint8_t* p_input,
+                                           std::uint8_t*       p_output,
+                                           xmcu::Milliseconds  a_timeout,
+                                           std::uint32_t*      p_tag = nullptr);
+
+        void deinit();
 
     private:
         AES* p_aes;
         friend AES;
+
+        // static Status process_ecb(const std::uint8_t* p_input, std::uint8_t* p_output, xmcu::Milliseconds a_timeout);
+
+        std::size_t m_gcm_payload_bytes = 0;
+        std::size_t m_gcm_header_bytes  = 0;
     };
 
     Pooling pooling;
@@ -101,42 +126,12 @@ private:
     void enable();
     void disable();
 
+    Pooling::Status process_ecb(const std::uint8_t* p_input, std::uint8_t* p_output, xmcu::Milliseconds a_timeout);
+
     AES_TypeDef* p_registers;
     IRQn_Type    irqn;
 
     template<typename Periph_t, std::uint32_t id> friend class xmcu::soc::peripheral;
-};
-
-template<> struct AES::Context<AES::Mode::ecb_encrypt>
-{
-    AES::Key_size  key_size;
-    AES::Data_type data_type = AES::Data_type::byte;
-
-    const std::uint32_t* p_key;
-    const std::uint8_t*  p_input;
-    std::uint8_t*        p_output;
-    std::size_t          size;
-};
-
-template<> struct AES::Context<AES::Mode::ecb_decrypt>
-{
-    AES::Key_size  key_size;
-    AES::Data_type data_type = AES::Data_type::byte;
-
-    const std::uint32_t* p_key;
-    const std::uint8_t*  p_input;
-    std::uint8_t*        p_output;
-    std::size_t          size;
-};
-
-template<> struct AES::Pooling::Result<AES::Mode::ecb_encrypt>
-{
-    AES::Pooling::Status status = AES::Pooling::Status::timeout;
-};
-
-template<> struct AES::Pooling::Result<AES::Mode::ecb_decrypt>
-{
-    AES::Pooling::Status status = AES::Pooling::Status::timeout;
 };
 
 } // namespace xmcu::soc::st::arm::m4::wb::rm0434::peripherals
