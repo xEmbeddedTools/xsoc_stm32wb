@@ -184,8 +184,8 @@ AES::Pooling::Status AES::init_gcm(AES::Mode                     a_mode,
     this->pooling.m_gcm_header_bytes  = a_header.size();
 
     this->disable();
-
     init_mode(a_mode, &(regs->CR), a_key_size, a_data_type);
+
     bit::flag::clear(&(regs->CR), AES_CR_GCMPH); // Phase 1: Init
 
     load_key(regs, a_p_key, a_key_size);
@@ -202,8 +202,7 @@ AES::Pooling::Status AES::init_gcm(AES::Mode                     a_mode,
 
     if (!a_header.empty())
     {
-        bit::flag::clear(&(regs->CR), AES_CR_GCMPH);
-        bit::flag::set(&(regs->CR), AES_CR_GCMPH_0);
+        regs->CR = (regs->CR & ~AES_CR_GCMPH) | AES_CR_GCMPH_0; // Phase 2: Header
         this->enable();
 
         write_block(regs, a_header.data());
@@ -214,7 +213,8 @@ AES::Pooling::Status AES::init_gcm(AES::Mode                     a_mode,
         }
 
         bit::flag::set(&(regs->CR), AES_CR_CCFC);
-        // this->disable();
+
+        this->disable();
     }
 
     return Pooling::Status::ok;
@@ -286,8 +286,9 @@ AES::Pooling::Status AES::process_gcm(const std::uint8_t* a_p_input,
     // If GCMPH is not 10b (Payload Phase), we transition to it.
     if ((regs->CR & AES_CR_GCMPH) != AES_CR_GCMPH_1)
     {
-        bit::flag::clear(&(regs->CR), AES_CR_GCMPH);
-        bit::flag::set(&(regs->CR), AES_CR_GCMPH_1); // Phase 3: Payload
+        // ATOMIC PHASE TRANSITION
+        this->disable();
+        regs->CR = (regs->CR & ~AES_CR_GCMPH) | AES_CR_GCMPH_1;
         this->enable();
     }
 
@@ -308,36 +309,42 @@ AES::Pooling::Status AES::process_gcm(const std::uint8_t* a_p_input,
     // 3. Auto-Finalize for GCM if tag is requested
     if (nullptr != a_p_tag)
     {
-        // RM0434: DO NOT disable the peripheral before entering Phase 4!
-        bit::flag::clear(&(regs->CR), AES_CR_GCMPH);
-        bit::flag::set(&(regs->CR), AES_CR_GCMPH_0 | AES_CR_GCMPH_1); // Phase 4: Final
+        // ATOMIC PHASE TRANSITION
+        regs->CR = (regs->CR & ~AES_CR_GCMPH) | (AES_CR_GCMPH_0 | AES_CR_GCMPH_1);
 
         std::uint64_t header_bits  = static_cast<std::uint64_t>(this->pooling.m_gcm_header_bytes) * 8u;
         std::uint64_t payload_bits = static_cast<std::uint64_t>(this->pooling.m_gcm_payload_bytes) * 8u;
 
-        // If DATATYPE is 10b (byte), the hardware bypasses swapping for DINR here.
-        // We must push the Big-Endian lengths manually using __builtin_bswap32.
-        if ((regs->CR & AES_CR_DATATYPE_Msk) == AES_CR_DATATYPE_1)
+        regs->DINR = static_cast<std::uint32_t>(header_bits >> 32);
+        regs->DINR = static_cast<std::uint32_t>(header_bits & 0xFFFFFFFF);
+        regs->DINR = static_cast<std::uint32_t>(payload_bits >> 32);
+        regs->DINR = static_cast<std::uint32_t>(payload_bits & 0xFFFFFFFF);
+
+        // regs->DINR = __builtin_bswap32(static_cast<std::uint32_t>(header_bits >> 32));
+        // regs->DINR = __builtin_bswap32(static_cast<std::uint32_t>(header_bits & 0xFFFFFFFF));
+        // regs->DINR = __builtin_bswap32(static_cast<std::uint32_t>(payload_bits >> 32));
+        // regs->DINR = __builtin_bswap32(static_cast<std::uint32_t>(payload_bits & 0xFFFFFFFF));
+
+        if (Pooling::Status::ok != wait_for_ccf(regs, end))
         {
-            regs->DINR = __builtin_bswap32(static_cast<std::uint32_t>(header_bits >> 32));
-            regs->DINR = __builtin_bswap32(static_cast<std::uint32_t>(header_bits & 0xFFFFFFFF));
-            regs->DINR = __builtin_bswap32(static_cast<std::uint32_t>(payload_bits >> 32));
-            regs->DINR = __builtin_bswap32(static_cast<std::uint32_t>(payload_bits & 0xFFFFFFFF));
-        }
-        else
-        {
-            regs->DINR = static_cast<std::uint32_t>(header_bits >> 32);
-            regs->DINR = static_cast<std::uint32_t>(header_bits & 0xFFFFFFFF);
-            regs->DINR = static_cast<std::uint32_t>(payload_bits >> 32);
-            regs->DINR = static_cast<std::uint32_t>(payload_bits & 0xFFFFFFFF);
+            return Pooling::Status::timeout;
         }
 
-        if (Pooling::Status::ok != wait_for_ccf(regs, end)) return Pooling::Status::timeout;
-
+        // std::uint32_t tag_buffer[4];
+        // tag_buffer[0] = regs->DOUTR;
+        // tag_buffer[1] = regs->DOUTR;
+        // tag_buffer[2] = regs->DOUTR;
+        // tag_buffer[3] = regs->DOUTR;
+        // std::memcpy(a_p_tag, tag_buffer, 16);
         a_p_tag[0] = regs->DOUTR;
         a_p_tag[1] = regs->DOUTR;
         a_p_tag[2] = regs->DOUTR;
         a_p_tag[3] = regs->DOUTR;
+
+        // a_p_tag[0] = __builtin_bswap32(regs->DOUTR);
+        // a_p_tag[1] = __builtin_bswap32(regs->DOUTR);
+        // a_p_tag[2] = __builtin_bswap32(regs->DOUTR);
+        // a_p_tag[3] = __builtin_bswap32(regs->DOUTR);
 
         bit::flag::set(&(regs->CR), AES_CR_CCFC);
         this->disable();
