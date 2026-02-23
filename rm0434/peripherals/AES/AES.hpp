@@ -99,7 +99,7 @@ public:
         template<Mode mode> Status process(const std::uint8_t* a_p_input,
                                            std::uint8_t*       a_p_output,
                                            xmcu::Milliseconds  a_timeout,
-                                           std::uint32_t*      a_p_tag = nullptr);
+                                           std::uint8_t*      a_p_tag = nullptr);
 
         void deinit();
 
@@ -109,8 +109,8 @@ public:
 
         // static Status process_ecb(const std::uint8_t* p_input, std::uint8_t* p_output, xmcu::Milliseconds a_timeout);
 
-        std::size_t m_gcm_payload_bytes = 0;
-        std::size_t m_gcm_header_bytes  = 0;
+        std::uint32_t m_gcm_payload_bytes = 0;
+        std::uint32_t m_gcm_header_bytes  = 0;
     };
 
     Pooling pooling;
@@ -139,7 +139,7 @@ private:
     Pooling::Status process_gcm(const std::uint8_t* a_p_input,
                                 std::uint8_t*       a_p_output,
                                 xmcu::Milliseconds  a_timeout,
-                                std::uint32_t*      a_p_tag);
+                                std::uint8_t*      a_p_tag);
 
     AES_TypeDef* p_registers;
     IRQn_Type    irqn;
