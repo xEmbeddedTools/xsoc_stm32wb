@@ -237,7 +237,10 @@ template<> AES::Pooling::Status AES::Pooling::init<AES::Mode::gcm_decrypt>(const
     return this->p_aes->init_gcm(AES::Mode::gcm_decrypt, a_p_key, a_p_iv, a_header, a_key_size, a_data_type, a_timeout);
 }
 
-AES::Pooling::Status AES::process_ecb(const std::uint8_t* p_input, std::uint8_t* p_output, xmcu::Milliseconds a_timeout)
+AES::Pooling::Status AES::process_ecb(const std::uint8_t* p_input,
+                                      std::uint8_t*       p_output,
+                                      std::uint32_t       a_length,
+                                      xmcu::Milliseconds  a_timeout)
 {
     const std::uint64_t end = tick_counter<Milliseconds>::get() + a_timeout.get();
 
@@ -258,24 +261,27 @@ AES::Pooling::Status AES::process_ecb(const std::uint8_t* p_input, std::uint8_t*
 
 template<> AES::Pooling::Status AES::Pooling::process<AES::Mode::ecb_encrypt>(const std::uint8_t* p_input,
                                                                               std::uint8_t*       p_output,
+                                                                              std::uint32_t       a_length,
                                                                               xmcu::Milliseconds  a_timeout,
                                                                               std::uint8_t* /* p_tag */)
 {
-    return this->p_aes->process_ecb(p_input, p_output, a_timeout);
+    return this->p_aes->process_ecb(p_input, p_output, a_length, a_timeout);
 }
 
 template<> AES::Pooling::Status AES::Pooling::process<AES::Mode::ecb_decrypt>(const std::uint8_t* p_input,
                                                                               std::uint8_t*       p_output,
+                                                                              std::uint32_t       a_length,
                                                                               xmcu::Milliseconds  a_timeout,
                                                                               std::uint8_t* /* p_tag */)
 {
-    return this->p_aes->process_ecb(p_input, p_output, a_timeout);
+    return this->p_aes->process_ecb(p_input, p_output, a_length, a_timeout);
 }
 
 AES::Pooling::Status AES::process_gcm(const std::uint8_t* a_p_input,
                                       std::uint8_t*       a_p_output,
+                                      std::uint32_t       a_length,
                                       xmcu::Milliseconds  a_timeout,
-                                      std::uint8_t*      a_p_tag)
+                                      std::uint8_t*       a_p_tag)
 {
     const std::uint64_t end  = tick_counter<Milliseconds>::get() + a_timeout.get();
     AES_TypeDef*        regs = this->p_registers;
@@ -285,6 +291,9 @@ AES::Pooling::Status AES::process_gcm(const std::uint8_t* a_p_input,
     {
         regs->CR = (regs->CR & ~AES_CR_GCMPH) | AES_CR_GCMPH_1;
     }
+
+    std::uint32_t padding_bytes = 16 - a_length;
+    regs->CR = (regs->CR & ~AES_CR_NPBLB_Msk) | (padding_bytes << AES_CR_NPBLB_Pos);
 
     // 2. Process Block
     write_block(regs, a_p_input);
@@ -298,7 +307,7 @@ AES::Pooling::Status AES::process_gcm(const std::uint8_t* a_p_input,
     read_block(regs, a_p_output);
     bit::flag::set(&(regs->CR), AES_CR_CCFC);
 
-    this->pooling.m_gcm_payload_bytes += 16;
+    this->pooling.m_gcm_payload_bytes += a_length;
 
     // Finalize for GCM if tag is requested
     if (nullptr != a_p_tag)
@@ -320,11 +329,7 @@ AES::Pooling::Status AES::process_gcm(const std::uint8_t* a_p_input,
 
         bit::flag::set(&(regs->CR), AES_CR_CCFC);
 
-        std::uint32_t* tag_words = reinterpret_cast<std::uint32_t*>(a_p_tag);
-        tag_words[0] = regs->DOUTR;
-        tag_words[1] = regs->DOUTR;
-        tag_words[2] = regs->DOUTR;
-        tag_words[3] = regs->DOUTR;
+        read_block(regs, a_p_tag);
 
         this->disable();
     }
@@ -334,18 +339,20 @@ AES::Pooling::Status AES::process_gcm(const std::uint8_t* a_p_input,
 
 template<> AES::Pooling::Status AES::Pooling::process<AES::Mode::gcm_encrypt>(const std::uint8_t* a_p_input,
                                                                               std::uint8_t*       a_p_output,
+                                                                              std::uint32_t       a_length,
                                                                               xmcu::Milliseconds  a_timeout,
-                                                                              std::uint8_t*      a_p_tag)
+                                                                              std::uint8_t*       a_p_tag)
 {
-    return this->p_aes->process_gcm(a_p_input, a_p_output, a_timeout, a_p_tag);
+    return this->p_aes->process_gcm(a_p_input, a_p_output, a_length, a_timeout, a_p_tag);
 }
 
 template<> AES::Pooling::Status AES::Pooling::process<AES::Mode::gcm_decrypt>(const std::uint8_t* a_p_input,
                                                                               std::uint8_t*       a_p_output,
+                                                                              std::uint32_t       a_length,
                                                                               xmcu::Milliseconds  a_timeout,
-                                                                              std::uint8_t*      a_p_tag)
+                                                                              std::uint8_t*       a_p_tag)
 {
-    return this->p_aes->process_gcm(a_p_input, a_p_output, a_timeout, a_p_tag);
+    return this->p_aes->process_gcm(a_p_input, a_p_output, a_length, a_timeout, a_p_tag);
 }
 
 void AES::Pooling::deinit()
