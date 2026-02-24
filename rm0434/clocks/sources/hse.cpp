@@ -63,4 +63,16 @@ void hse::tune::set(Amplifier_threshold a_amplifier_threshold)
     RCC->HSECR = hse_control_unlock_key;
     bit::flag::set(&(RCC->HSECR), RCC_HSECR_HSES, static_cast<std::uint32_t>(a_amplifier_threshold));
 }
+hse::tune::Capacitor_tuning hse::tune::get_Capacitor_tuning()
+{
+    return bit::flag::get(RCC->HSECR, RCC_HSECR_HSETUNE) >> RCC_HSECR_HSETUNE_Pos;
+}
+hse::tune::Current_control_max_limit hse::tune::get_Current_control_max_limit()
+{
+    return static_cast<Current_control_max_limit>(bit::flag::get(RCC->HSECR, RCC_HSECR_HSEGMC));
+}
+hse::tune::Amplifier_threshold hse::tune::get_amplifier_threshold()
+{
+    return static_cast<Amplifier_threshold>(bit::flag::get(RCC->HSECR, RCC_HSECR_HSES));
+}
 } // namespace xmcu::soc::st::arm::m4::wb::rm0434::clocks::sources
