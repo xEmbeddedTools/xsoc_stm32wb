@@ -4,14 +4,11 @@
  */
 
 // this
-#include "stm32wb55xx.h"
-
 #include <rm0434/peripherals/AES/AES.hpp>
 
 // std
 #include <cstring>
 #include <expected>
-#include <span>
 #include <utility>
 
 // xmcu
@@ -25,30 +22,25 @@ using namespace xmcu;
 using namespace xmcu::soc::st::arm::m4::wb::rm0434::utils;
 using namespace xmcu::soc::st::arm::m4::wb::rm0434::peripherals;
 
-void load_key(AES_TypeDef* p_registers, const std::uint32_t* p_key, AES::Key_size key_size)
+void load_key(AES_TypeDef* p_registers, AES::Key a_key)
 {
-    if (nullptr == p_key)
+    if (a_key.size == AES::Key::Key_size::bits_256)
     {
-        return;
-    }
-
-    if (key_size == AES::Key_size::bits_256)
-    {
-        p_registers->KEYR7 = p_key[0];
-        p_registers->KEYR6 = p_key[1];
-        p_registers->KEYR5 = p_key[2];
-        p_registers->KEYR4 = p_key[3];
-        p_registers->KEYR3 = p_key[4];
-        p_registers->KEYR2 = p_key[5];
-        p_registers->KEYR1 = p_key[6];
-        p_registers->KEYR0 = p_key[7];
+        p_registers->KEYR7 = a_key.p_data[0];
+        p_registers->KEYR6 = a_key.p_data[1];
+        p_registers->KEYR5 = a_key.p_data[2];
+        p_registers->KEYR4 = a_key.p_data[3];
+        p_registers->KEYR3 = a_key.p_data[4];
+        p_registers->KEYR2 = a_key.p_data[5];
+        p_registers->KEYR1 = a_key.p_data[6];
+        p_registers->KEYR0 = a_key.p_data[7];
     }
     else
     {
-        p_registers->KEYR3 = p_key[0];
-        p_registers->KEYR2 = p_key[1];
-        p_registers->KEYR1 = p_key[2];
-        p_registers->KEYR0 = p_key[3];
+        p_registers->KEYR3 = a_key.p_data[0];
+        p_registers->KEYR2 = a_key.p_data[1];
+        p_registers->KEYR1 = a_key.p_data[2];
+        p_registers->KEYR0 = a_key.p_data[3];
     }
 }
 
@@ -88,10 +80,7 @@ bool wait_for_ccf(AES_TypeDef* p_registers, std::uint64_t a_end_timestamp)
     return true;
 }
 
-void init_mode(AES::Operation a_operation,
-               volatile std::uint32_t* a_p_cr,
-               AES::Key_size a_key_size,
-               AES::Data_type a_data_type)
+void init_mode(AES::Operation a_operation, volatile std::uint32_t* a_p_cr, AES::Key a_key, AES::Data_type a_data_type)
 {
     std::uint32_t cr_val = 0u;
 
@@ -114,13 +103,13 @@ void init_mode(AES::Operation a_operation,
             break;
     };
 
-    bit::flag::set(&cr_val, std::to_underlying(a_key_size));
+    bit::flag::set(&cr_val, std::to_underlying(a_key.size));
     bit::flag::set(&cr_val, std::to_underlying(a_data_type));
 
     *a_p_cr = cr_val;
 }
 
-void load_iv_gcm(AES_TypeDef* p_registers, const std::uint32_t* p_iv)
+void load_iv(AES_TypeDef* p_registers, const std::uint32_t* p_iv)
 {
     if (nullptr == p_iv)
     {
@@ -140,22 +129,15 @@ namespace xmcu::soc::st::arm::m4::wb::rm0434::peripherals {
 using namespace xmcu;
 
 template<> AES::Pooling::Init_result<AES::Pooling::CommonContext>
-AES::Pooling::init<AES::Operation::ecb_encryption>(const std::uint32_t* a_p_key,
-                                                   AES::Key_size a_key_size,
-                                                   xmcu::Milliseconds)
+AES::Pooling::init<AES::Operation::ecb_encryption>(AES::Key a_key, xmcu::Milliseconds)
 {
-    if (nullptr == a_p_key)
-    {
-        return std::unexpected(Error::null_pointer_key);
-    }
-
     AES_TypeDef* regs = this->p_aes->p_registers;
 
     this->p_aes->disable();
 
-    init_mode(AES::Operation::ecb_encryption, &(regs->CR), a_key_size, AES::Data_type::byte);
+    init_mode(AES::Operation::ecb_encryption, &(regs->CR), a_key, AES::Data_type::byte);
 
-    load_key(regs, a_p_key, a_key_size);
+    load_key(regs, a_key);
 
     this->p_aes->enable();
 
@@ -163,15 +145,8 @@ AES::Pooling::init<AES::Operation::ecb_encryption>(const std::uint32_t* a_p_key,
 }
 
 template<> AES::Pooling::Init_result<AES::Pooling::CommonContext>
-AES::Pooling::init<AES::Operation::ecb_decryption>(const std::uint32_t* a_p_key,
-                                                   AES::Key_size a_key_size,
-                                                   xmcu::Milliseconds a_timeout)
+AES::Pooling::init<AES::Operation::ecb_decryption>(AES::Key a_key, xmcu::Milliseconds a_timeout)
 {
-    if (nullptr == a_p_key)
-    {
-        return std::unexpected(Error::null_pointer_key);
-    }
-
     const std::uint64_t end = utils::tick_counter<Milliseconds>::get() + a_timeout.get();
     AES_TypeDef* regs = this->p_aes->p_registers;
 
@@ -179,10 +154,10 @@ AES::Pooling::init<AES::Operation::ecb_decryption>(const std::uint32_t* a_p_key,
 
     // Step 1: Key Derivation CHMOD: 000, MODE: 01
     std::uint32_t cr_deriv = AES_CR_MODE_0;
-    bit::flag::set(&cr_deriv, std::to_underlying(a_key_size));
+    bit::flag::set(&cr_deriv, std::to_underlying(a_key.size));
     regs->CR = cr_deriv;
 
-    load_key(regs, a_p_key, a_key_size);
+    load_key(regs, a_key);
 
     this->p_aes->enable();
 
@@ -194,15 +169,14 @@ AES::Pooling::init<AES::Operation::ecb_decryption>(const std::uint32_t* a_p_key,
 
     bit::flag::set(&(regs->CR), AES_CR_CCFC);
 
-    // Step 2: Decryption Setup
-    init_mode(AES::Operation::ecb_decryption, &(regs->CR), a_key_size, AES::Data_type::byte);
+    init_mode(AES::Operation::ecb_decryption, &(regs->CR), a_key, AES::Data_type::byte);
 
     this->p_aes->enable();
 
     return CommonContext(this->p_aes);
 }
 
-AES::Pooling::Result
+AES::Pooling::Processing_result
 AES::Pooling::CommonContext::process(AES::Const_block a_input, AES::Block a_output, xmcu::Milliseconds a_timeout)
 {
     const std::uint64_t end = tick_counter<Milliseconds>::get() + a_timeout.get();
@@ -223,27 +197,27 @@ AES::Pooling::CommonContext::process(AES::Const_block a_input, AES::Block a_outp
 }
 
 template<> AES::Pooling::Init_result<AES::Pooling::GcmContext>
-AES::Pooling::init<AES::Operation::gcm_encryption>(const std::uint32_t* a_p_key,
-                                                   AES::Key_size a_key_size,
-                                                   const std::uint32_t* a_p_iv,
-                                                   xmcu::Milliseconds a_timeout)
+AES::Pooling::init<AES::Operation::gcm_encryption>(AES::Key a_key, AES::Iv a_iv, xmcu::Milliseconds a_timeout)
 {
-    return this->init_gcm(AES::Operation::gcm_encryption, a_p_key, a_key_size, a_p_iv, a_timeout);
+    return this->init_gcm(AES::Operation::gcm_encryption, a_key, a_iv, a_timeout);
 }
 
 template<> AES::Pooling::Init_result<AES::Pooling::GcmContext>
-AES::Pooling::init<AES::Operation::gcm_decryption>(const std::uint32_t* a_p_key,
-                                                   AES::Key_size a_key_size,
-                                                   const std::uint32_t* a_p_iv,
-                                                   xmcu::Milliseconds a_timeout)
+AES::Pooling::init<AES::Operation::gcm_decryption>(AES::Key a_key, AES::Iv a_iv, xmcu::Milliseconds a_timeout)
 {
-    return this->init_gcm(AES::Operation::gcm_decryption, a_p_key, a_key_size, a_p_iv, a_timeout);
+    return this->init_gcm(AES::Operation::gcm_decryption, a_key, a_iv, a_timeout);
 }
 
-AES::Pooling::Result AES::Pooling::GcmContext::add_header(Const_block a_header, xmcu::Milliseconds a_timeout)
+AES::Pooling::Processing_result AES::Pooling::GcmContext::add_header(Const_block a_header,
+                                                                     xmcu::Limited<std::uint8_t, 0, 16> a_valid_bytes,
+                                                                     xmcu::Milliseconds a_timeout)
 {
-    const std::uint64_t end = utils::tick_counter<Milliseconds>::get() + a_timeout.get();
+    if (a_valid_bytes.get() == 0)
+    {
+        return {};
+    }
 
+    const std::uint64_t end = utils::tick_counter<Milliseconds>::get() + a_timeout.get();
     AES_TypeDef* regs = this->p_aes->p_registers;
 
     if ((regs->CR & AES_CR_GCMPH) != AES_CR_GCMPH_0)
@@ -256,34 +230,38 @@ AES::Pooling::Result AES::Pooling::GcmContext::add_header(Const_block a_header, 
 
     if (false == wait_for_ccf(regs, end))
     {
+        this->p_aes->disable();
         return std::unexpected(Error::timeout);
     }
 
     bit::flag::set(&(regs->CR), AES_CR_CCFC);
 
-    this->header_bytes += a_header.size();
+    this->header_bytes += a_valid_bytes.get();
 
     return {};
 }
 
-AES::Pooling::Result AES::Pooling::GcmContext::add_payload(Const_block a_input,
-                                                           Block a_output,
-                                                           std::uint32_t a_length,
-                                                           xmcu::Milliseconds a_timeout)
+AES::Pooling::Processing_result AES::Pooling::GcmContext::add_payload(Const_block a_input,
+                                                                      Block a_output,
+                                                                      xmcu::Limited<std::uint8_t, 0, 16> a_valid_bytes,
+                                                                      xmcu::Milliseconds a_timeout)
 {
+    if (0 == a_valid_bytes.get())
+    {
+        return {};
+    }
+
     const std::uint64_t end = tick_counter<Milliseconds>::get() + a_timeout.get();
     AES_TypeDef* regs = this->p_aes->p_registers;
 
-    // If GCMPH is not 10b (Payload Phase), we transition to it.
     if ((regs->CR & AES_CR_GCMPH) != AES_CR_GCMPH_1)
     {
         regs->CR = (regs->CR & ~AES_CR_GCMPH) | AES_CR_GCMPH_1;
     }
 
-    std::uint32_t padding_bytes = 16 - a_length;
+    std::uint32_t padding_bytes = 16 - a_valid_bytes.get();
     regs->CR = (regs->CR & ~AES_CR_NPBLB_Msk) | (padding_bytes << AES_CR_NPBLB_Pos);
 
-    // 2. Process Block
     write_block(regs, a_input.data());
 
     if (false == wait_for_ccf(regs, end))
@@ -295,12 +273,12 @@ AES::Pooling::Result AES::Pooling::GcmContext::add_payload(Const_block a_input,
     read_block(regs, a_output.data());
     bit::flag::set(&(regs->CR), AES_CR_CCFC);
 
-    this->payload_bytes += a_length;
+    this->payload_bytes += a_valid_bytes.get();
 
     return {};
 }
 
-AES::Pooling::Result AES::Pooling::GcmContext::finalize(std::uint8_t* a_p_tag, xmcu::Milliseconds a_timeout)
+AES::Pooling::Processing_result AES::Pooling::GcmContext::finalize(Block a_tag, xmcu::Milliseconds a_timeout)
 {
     const std::uint64_t end = tick_counter<Milliseconds>::get() + a_timeout.get();
     AES_TypeDef* regs = this->p_aes->p_registers;
@@ -317,21 +295,17 @@ AES::Pooling::Result AES::Pooling::GcmContext::finalize(std::uint8_t* a_p_tag, x
 
     if (false == wait_for_ccf(regs, end))
     {
+        this->p_aes->disable();
         return std::unexpected(Error::timeout);
     }
 
     bit::flag::set(&(regs->CR), AES_CR_CCFC);
 
-    read_block(regs, a_p_tag);
+    read_block(regs, a_tag.data());
 
     this->p_aes->disable();
 
     return {};
-}
-
-void AES::Pooling::deinit()
-{
-    this->p_aes->disable();
 }
 
 void AES::enable()
@@ -344,33 +318,20 @@ void AES::disable()
     bit::flag::clear(&(this->p_registers->CR), AES_CR_EN);
 }
 
-AES::Pooling::Init_result<AES::Pooling::GcmContext> AES::Pooling::init_gcm(AES::Operation a_operation,
-                                                                           const std::uint32_t* a_p_key,
-                                                                           Key_size a_key_size,
-                                                                           const std::uint32_t* a_p_iv,
-                                                                           xmcu::Milliseconds a_timeout)
+AES::Pooling::Init_result<AES::Pooling::GcmContext>
+AES::Pooling::init_gcm(AES::Operation a_operation, AES::Key a_key, AES::Iv a_iv, xmcu::Milliseconds a_timeout)
 {
-    if (nullptr == a_p_key)
-    {
-        return std::unexpected(Error::null_pointer_key);
-    }
-
-    if (nullptr == a_p_iv)
-    {
-        return std::unexpected(Error::null_pointer_iv);
-    }
-
     const std::uint64_t end = utils::tick_counter<Milliseconds>::get() + a_timeout.get();
 
     AES_TypeDef* regs = this->p_aes->p_registers;
 
     this->p_aes->disable();
 
-    init_mode(a_operation, &(regs->CR), a_key_size, AES::Data_type::byte);
-    bit::flag::clear(&(regs->CR), AES_CR_GCMPH); // Faza 1: Init
+    init_mode(a_operation, &(regs->CR), a_key, AES::Data_type::byte);
+    bit::flag::clear(&(regs->CR), AES_CR_GCMPH);
 
-    load_key(regs, a_p_key, a_key_size);
-    load_iv_gcm(regs, a_p_iv);
+    load_key(regs, a_key);
+    load_iv(regs, a_iv.data());
 
     this->p_aes->enable();
 

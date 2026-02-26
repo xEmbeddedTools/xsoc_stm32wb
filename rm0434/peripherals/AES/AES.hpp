@@ -6,8 +6,6 @@
  */
 
 // std
-#include "stm32wb55xx.h"
-
 #include <expected>
 #include <span>
 
@@ -19,8 +17,8 @@
 #include <rm0434/rcc.hpp>
 #include <soc/peripheral.hpp>
 #include <xmcu/Duration.hpp>
+#include <xmcu/Limited.hpp>
 #include <xmcu/Non_copyable.hpp>
-#include <xmcu/bit.hpp>
 
 namespace xmcu::soc::st::arm::m4::wb::rm0434::peripherals {
 
@@ -42,17 +40,34 @@ public:
         gcm_decryption,
     };
 
-    enum class Key_size : std::uint32_t
-    {
-        bits_128 = 0u,
-        bits_256 = AES_CR_KEYSIZE,
-    };
-
     using enum Operation;
-    using enum Key_size;
 
     using Block = std::span<std::uint8_t, 16>;
     using Const_block = std::span<const std::uint8_t, 16>;
+    using Iv = std::span<const std::uint32_t, 3>;
+
+    struct Key
+    {
+        enum class Key_size : std::uint32_t
+        {
+            bits_128 = 0u,
+            bits_256 = AES_CR_KEYSIZE,
+        };
+
+        const std::uint32_t* p_data;
+        Key_size size;
+
+        constexpr Key(std::span<const std::uint32_t, 4> a_key)
+            : p_data(a_key.data())
+            , size(Key_size::bits_128)
+        {
+        }
+        constexpr Key(std::span<const std::uint32_t, 8> a_key)
+            : p_data(a_key.data())
+            , size(Key_size::bits_256)
+        {
+        }
+    };
 
     class Pooling : private Non_copyable
     {
@@ -60,18 +75,17 @@ public:
         enum class Error
         {
             timeout,
-            null_pointer_key,
-            null_pointer_iv,
         };
 
         using enum Error;
 
-        using Result = std::expected<void, Error>;
+        using Processing_result = std::expected<void, Error>;
+        template<typename Context> using Init_result = std::expected<Context, Error>;
 
         class CommonContext
         {
         public:
-            Result process(Const_block a_input, Block a_output, xmcu::Milliseconds a_timeout = 20_ms);
+            Processing_result process(Const_block a_input, Block a_output, xmcu::Milliseconds a_timeout = 10_ms);
 
         private:
             friend class Pooling;
@@ -86,12 +100,14 @@ public:
         class GcmContext
         {
         public:
-            Result add_header(Const_block a_header, xmcu::Milliseconds a_timeout = 20_ms);
-            Result add_payload(Const_block a_input,
-                               Block a_p_output,
-                               std::uint32_t a_length,
-                               xmcu::Milliseconds a_timeout = 20_ms);
-            Result finalize(std::uint8_t* a_p_tag, xmcu::Milliseconds a_timeout = 20_ms);
+            Processing_result add_header(Const_block a_header,
+                                         xmcu::Limited<std::uint8_t, 0, 16> a_valid_bytes,
+                                         xmcu::Milliseconds a_timeout = 10_ms);
+            Processing_result add_payload(Const_block a_input,
+                                          Block a_p_output,
+                                          xmcu::Limited<std::uint8_t, 0, 16> a_valid_bytes,
+                                          xmcu::Milliseconds a_timeout = 10_ms);
+            Processing_result finalize(Block a_p_tag, xmcu::Milliseconds a_timeout = 10_ms);
 
         private:
             friend class Pooling;
@@ -108,24 +124,13 @@ public:
             std::uint32_t payload_bytes;
         };
 
-        template<typename Context> using Init_result = std::expected<Context, Error>;
+        template<Operation op> Init_result<CommonContext> init(Key a_key, xmcu::Milliseconds a_timeout = 10_ms);
 
-        template<Operation op> Init_result<CommonContext>
-        init(const std::uint32_t* a_p_key, Key_size a_key_size, xmcu::Milliseconds a_timeout = 20_ms);
-
-        template<Operation op> Init_result<GcmContext> init(const std::uint32_t* a_p_key,
-                                                            Key_size a_key_size,
-                                                            const std::uint32_t* a_p_iv,
-                                                            xmcu::Milliseconds a_timeout = 20_ms);
-
-        void deinit();
+        template<Operation op> Init_result<GcmContext> init(Key a_key, Iv a_iv, xmcu::Milliseconds a_timeout = 10_ms);
 
     private:
-        Init_result<GcmContext> init_gcm(AES::Operation a_operation,
-                                         const std::uint32_t* a_p_key,
-                                         Key_size a_key_size,
-                                         const std::uint32_t* a_p_iv,
-                                         xmcu::Milliseconds a_timeout = 20_ms);
+        Init_result<GcmContext>
+        init_gcm(AES::Operation a_operation, Key a_key, Iv a_iv, xmcu::Milliseconds a_timeout = 10_ms);
 
         AES* p_aes;
         friend AES;
@@ -151,13 +156,6 @@ private:
 
     void enable();
     void disable();
-
-    Pooling::Init_result<Pooling::GcmContext> init_gcm(AES::Operation a_operation,
-                                                       const std::uint32_t* a_p_key,
-                                                       const std::uint32_t* a_p_iv,
-                                                       std::span<const std::uint8_t> a_header,
-                                                       Key_size a_key_size,
-                                                       xmcu::Milliseconds a_timeout);
 
     AES_TypeDef* p_registers;
     IRQn_Type irqn;
