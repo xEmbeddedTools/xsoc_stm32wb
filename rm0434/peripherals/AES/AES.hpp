@@ -79,8 +79,8 @@ public:
 
         using enum Error;
 
-        using Processing_result = std::expected<void, Error>;
         template<typename Context> using Init_result = std::expected<Context, Error>;
+        using Processing_result = std::expected<void, Error>;
 
         class CommonContext
         {
