@@ -106,6 +106,14 @@ public:
             void* p_user_data = nullptr;
         };
 
+        struct Callback_rsa_crt_exp
+        {
+            using Function = void (*)(const Result<Mode::rsa_crt_exp>& a_result);
+
+            Function function = nullptr;
+            void* p_user_data = nullptr;
+        };
+
         template<Mode M> struct Callback_traits;
 
         void enable(const IRQ_config& a_irq_config);
@@ -158,7 +166,11 @@ private:
     void* user_func = nullptr;
     void* user_data = nullptr;
 
+    const void* p_active_context = nullptr;
+
     void load(const Context<Public_key_accelerator::Mode::ecdsa_verify>& a_ctx) const;
+    void load(const Context<Public_key_accelerator::Mode::rsa_crt_exp>& a_ctx) const;
+    void read(const Context<Public_key_accelerator::Mode::rsa_crt_exp>& a_ctx) const;
 
     template<Mode mode> static void
     dispach_irq(Public_key_accelerator* a_p_this, Interrupt::Source a_source, void* a_p_user_func, void* a_p_user_data);
@@ -190,10 +202,31 @@ template<> struct Public_key_accelerator::Context<Public_key_accelerator::Mode::
     const uint8_t* p_hash;
 };
 
+template<> struct Public_key_accelerator::Context<Public_key_accelerator::Mode::rsa_crt_exp>
+{
+    std::uint32_t modulus_size_bits;
+    std::uint32_t prime_size_bytes;
+
+    const uint8_t* p_dp;
+    const uint8_t* p_dq;
+    const uint8_t* p_qinv;
+    const uint8_t* p_p;
+    const uint8_t* p_q;
+
+    const uint8_t* p_ciphertext;
+
+    uint8_t* p_out_plaintext;
+};
+
 template<> struct Public_key_accelerator::Pooling::Result<Public_key_accelerator::Mode::ecdsa_verify>
 {
     Public_key_accelerator::Pooling::Status status = Status::busy;
     bool is_signature_valid = false;
+};
+
+template<> struct Public_key_accelerator::Pooling::Result<Public_key_accelerator::Mode::rsa_crt_exp>
+{
+    Public_key_accelerator::Pooling::Status status = Status::busy;
 };
 
 template<> struct Public_key_accelerator::Interrupt::Result<Public_key_accelerator::Mode::ecdsa_verify>
@@ -202,9 +235,19 @@ template<> struct Public_key_accelerator::Interrupt::Result<Public_key_accelerat
     bool is_signature_valid = false;
 };
 
+template<> struct Public_key_accelerator::Interrupt::Result<Public_key_accelerator::Mode::rsa_crt_exp>
+{
+    Public_key_accelerator::Interrupt::Source source = Source::operation_end;
+};
+
 template<> struct Public_key_accelerator::Interrupt::Callback_traits<Public_key_accelerator::Mode::ecdsa_verify>
 {
     using Type = Public_key_accelerator::Interrupt::Callback_ecdsa_verify;
+};
+
+template<> struct Public_key_accelerator::Interrupt::Callback_traits<Public_key_accelerator::Mode::rsa_crt_exp>
+{
+    using Type = Public_key_accelerator::Interrupt::Callback_rsa_crt_exp;
 };
 
 template<Public_key_accelerator::Mode mode>
@@ -216,6 +259,8 @@ void Public_key_accelerator::Interrupt::start(const Context<mode>& a_ctx,
     this->p_pka->user_func = reinterpret_cast<void*>(a_callback.function);
     this->p_pka->user_data = a_callback.p_user_data;
     this->p_pka->irq_dispatcher = &Public_key_accelerator::dispach_irq<mode>;
+
+    this->p_pka->p_active_context = &a_ctx;
 
     this->p_pka->load(a_ctx);
 

@@ -23,6 +23,8 @@
 namespace {
 
 using namespace xmcu::soc::st::arm::m4::wb::rm0434::peripherals;
+using namespace xmcu::soc::st::arm::m4::wb::rm0434::utils;
+using namespace xmcu;
 
 Public_key_accelerator* pka_context = nullptr;
 
@@ -82,9 +84,75 @@ void write_to_pka_memory(volatile std::uint32_t* a_p_dst, const std::uint8_t* a_
     a_p_dst[(a_size + 3) / 4] = 0u;
 }
 
+void read_from_pka_memory(std::uint8_t* a_p_dst, const volatile std::uint32_t* a_p_src, std::size_t a_size)
+{
+    hkm_assert(nullptr != a_p_dst);
+    hkm_assert(nullptr != a_p_src);
+
+    std::size_t full_words = a_size / 4u;
+    std::size_t remaining_bytes = a_size % 4u;
+
+    const volatile std::uint32_t* src_word = a_p_src;
+    std::uint8_t* dst_byte_current = a_p_dst + a_size - 4u;
+
+    for (std::size_t i = 0u; i < full_words; ++i)
+    {
+        std::uint32_t word = __builtin_bswap32(*src_word);
+        std::memcpy(dst_byte_current, &word, sizeof(word));
+
+        src_word++;
+        dst_byte_current -= sizeof(word);
+    }
+
+    if (remaining_bytes > 0u)
+    {
+        std::uint32_t word = __builtin_bswap32(*src_word);
+        std::uint8_t* p_word_bytes = reinterpret_cast<std::uint8_t*>(&word);
+        std::memcpy(a_p_dst, p_word_bytes + (4u - remaining_bytes), remaining_bytes);
+    }
+}
+
 bool is_ecdsa_signature_valid()
 {
     return 0u == PKA->RAM[PKA_ECDSA_VERIF_OUT_RESULT];
+}
+
+Public_key_accelerator::Pooling::Status wait_for_pka_completion(xmcu::Milliseconds a_timeout)
+{
+    const std::uint64_t end = tick_counter<xmcu::Milliseconds>::get() + a_timeout.get();
+
+    while (tick_counter<xmcu::Milliseconds>::get() < end)
+    {
+        if (bit::flag::is(PKA->SR, PKA_SR_PROCENDF))
+        {
+            return Public_key_accelerator::Pooling::Status::ok;
+        }
+
+        if (bit::flag::is(PKA->SR, PKA_SR_RAMERRF))
+        {
+            return Public_key_accelerator::Pooling::Status::ram_err;
+        }
+
+        if (bit::flag::is(PKA->SR, PKA_SR_ADDRERRF))
+        {
+            return Public_key_accelerator::Pooling::Status::addr_err;
+        }
+    }
+
+    // Timeout
+    bit::flag::clear(&(PKA->CR), PKA_CR_EN);
+    bit::flag::set(&(PKA->CR), PKA_CR_EN);
+    return Public_key_accelerator::Pooling::Status::timeout;
+}
+
+void wipe_pka_memory(volatile std::uint32_t* a_p_dst, std::size_t a_size_bytes)
+{
+    hkm_assert(nullptr != a_p_dst);
+    std::size_t words = (a_size_bytes + 3u) / 4u;
+    for (std::size_t i = 0u; i < words; ++i)
+    {
+        a_p_dst[i] = 0u;
+    }
 }
 
 } // namespace
@@ -100,29 +168,6 @@ void PKA_IRQHandler()
 } // extern "C"
 
 namespace xmcu::soc::st::arm::m4::wb::rm0434::peripherals {
-
-using namespace utils;
-using namespace xmcu;
-
-void PKA_interrupt_handler(Public_key_accelerator* a_p_this)
-{
-    hkm_assert(nullptr != a_p_this);
-    hkm_assert(nullptr != a_p_this->irq_dispatcher);
-
-    Public_key_accelerator::Interrupt::Source source = Public_key_accelerator::Interrupt::operation_end;
-    if (true == bit::flag::is(PKA->SR, PKA_SR_ADDRERRF))
-    {
-        source = Public_key_accelerator::Interrupt::addr_err;
-    }
-    else if (true == bit::flag::is(PKA->SR, PKA_SR_RAMERRF))
-    {
-        source = Public_key_accelerator::Interrupt::ram_err;
-    }
-
-    bit::flag::set(&(PKA->CLRFR), PKA_CLRFR_ADDRERRFC | PKA_CLRFR_RAMERRFC | PKA_CLRFR_PROCENDFC);
-
-    a_p_this->irq_dispatcher(a_p_this, source, a_p_this->user_func, a_p_this->user_data);
-}
 
 void Public_key_accelerator::enable()
 {
@@ -141,11 +186,12 @@ bool Public_key_accelerator::is_enabled() const
     return PKA_CR_EN == bit::flag::get(PKA->CLRFR, PKA_CR_EN);
 }
 
+// --------------------------------------------------------------------------------------------------------------------
+// ECDSA VERIFY
+// --------------------------------------------------------------------------------------------------------------------
 template<> Public_key_accelerator::Pooling::Result<Public_key_accelerator::ecdsa_verify>
 Public_key_accelerator::Pooling::execute(const Context<Mode::ecdsa_verify>& a_ctx, Milliseconds a_timeout)
 {
-    const std::uint64_t end = tick_counter<Milliseconds>::get() + a_timeout.get();
-
     if (true == bit::flag::is(PKA->SR, PKA_SR_BUSY))
     {
         return { .status = Status::busy, .is_signature_valid = false };
@@ -156,44 +202,9 @@ Public_key_accelerator::Pooling::execute(const Context<Mode::ecdsa_verify>& a_ct
     bit::flag::set(&(PKA->CR),
                    PKA_CR_MODE | PKA_CR_PROCENDIE | PKA_CR_RAMERRIE | PKA_CR_ADDRERRIE,
                    std::to_underlying(Mode::ecdsa_verify));
-
     bit::flag::set(&(PKA->CR), PKA_CR_START);
 
-    Status status = Status::ok;
-
-    bool finished = false;
-
-    while (tick_counter<Milliseconds>::get() < end)
-    {
-        if (bit::flag::is(PKA->SR, PKA_SR_PROCENDF))
-        {
-            status = Status::ok;
-            finished = true;
-            break;
-        }
-
-        if (bit::flag::is(PKA->SR, PKA_SR_RAMERRF))
-        {
-            status = Status::ram_err;
-            finished = true;
-            break;
-        }
-
-        if (bit::flag::is(PKA->SR, PKA_SR_ADDRERRF))
-        {
-            status = Status::addr_err;
-            finished = true;
-            break;
-        }
-    }
-
-    if (false == finished)
-    {
-        status = Status::timeout;
-
-        bit::flag::clear(&(PKA->CR), PKA_CR_EN);
-        bit::flag::set(&(PKA->CR), PKA_CR_EN);
-    }
+    Status status = wait_for_pka_completion(a_timeout);
 
     Result<Mode::ecdsa_verify> result = { .status = status, .is_signature_valid = false };
 
@@ -206,7 +217,6 @@ Public_key_accelerator::Pooling::execute(const Context<Mode::ecdsa_verify>& a_ct
     }
 
     bit::flag::set(&(PKA->CLRFR), PKA_CLRFR_PROCENDFC | PKA_CLRFR_RAMERRFC | PKA_CLRFR_ADDRERRFC);
-
     return result;
 }
 
@@ -231,6 +241,113 @@ void Public_key_accelerator::load(
     write_to_pka_memory(&PKA->RAM[PKA_ECDSA_VERIF_IN_ORDER_N], a_ctx.p_prime_order, a_ctx.prime_order_size);
 }
 
+template<>
+void Public_key_accelerator::populate_result(Interrupt::Result<Public_key_accelerator::ecdsa_verify>& a_result,
+                                             Interrupt::Source a_source)
+{
+    a_result.is_signature_valid = Interrupt::operation_end == a_source && true == is_ecdsa_signature_valid();
+    a_result.source = a_source;
+}
+
+// --------------------------------------------------------------------------------------------------------------------
+// RSA CRT EXPONENTIATION
+// --------------------------------------------------------------------------------------------------------------------
+template<> Public_key_accelerator::Pooling::Result<Public_key_accelerator::Mode::rsa_crt_exp>
+Public_key_accelerator::Pooling::execute(const Context<Mode::rsa_crt_exp>& a_ctx, Milliseconds a_timeout)
+{
+    if (true == bit::flag::is(PKA->SR, PKA_SR_BUSY))
+    {
+        return { .status = Status::busy };
+    }
+
+    this->p_pka->load(a_ctx);
+
+    bit::flag::set(&(PKA->CR),
+                   PKA_CR_MODE | PKA_CR_PROCENDIE | PKA_CR_RAMERRIE | PKA_CR_ADDRERRIE,
+                   std::to_underlying(Mode::rsa_crt_exp));
+    bit::flag::set(&(PKA->CR), PKA_CR_START);
+
+    Status status = wait_for_pka_completion(a_timeout);
+
+    if (Pooling::Status::ok == status)
+    {
+        this->p_pka->read(a_ctx);
+    }
+
+    bit::flag::set(&(PKA->CLRFR), PKA_CLRFR_PROCENDFC | PKA_CLRFR_RAMERRFC | PKA_CLRFR_ADDRERRFC);
+    return { .status = status };
+}
+
+void Public_key_accelerator::load(
+    const Public_key_accelerator::Context<Public_key_accelerator::Mode::rsa_crt_exp>& a_ctx) const
+{
+    PKA->RAM[PKA_RSA_CRT_EXP_IN_MOD_NB_BITS] = a_ctx.modulus_size_bits;
+
+    write_to_pka_memory(&PKA->RAM[PKA_RSA_CRT_EXP_IN_DP_CRT], a_ctx.p_dp, a_ctx.prime_size_bytes);
+    write_to_pka_memory(&PKA->RAM[PKA_RSA_CRT_EXP_IN_DQ_CRT], a_ctx.p_dq, a_ctx.prime_size_bytes);
+    write_to_pka_memory(&PKA->RAM[PKA_RSA_CRT_EXP_IN_QINV_CRT], a_ctx.p_qinv, a_ctx.prime_size_bytes);
+    write_to_pka_memory(&PKA->RAM[PKA_RSA_CRT_EXP_IN_PRIME_P], a_ctx.p_p, a_ctx.prime_size_bytes);
+    write_to_pka_memory(&PKA->RAM[PKA_RSA_CRT_EXP_IN_PRIME_Q], a_ctx.p_q, a_ctx.prime_size_bytes);
+
+    write_to_pka_memory(&PKA->RAM[PKA_RSA_CRT_EXP_IN_EXPONENT_BASE], a_ctx.p_ciphertext, a_ctx.prime_size_bytes * 2);
+}
+
+void Public_key_accelerator::read(
+    const Public_key_accelerator::Context<Public_key_accelerator::Mode::rsa_crt_exp>& a_ctx) const
+{
+    const std::size_t rsa_bytes = a_ctx.prime_size_bytes * 2;
+
+    if (nullptr != a_ctx.p_out_plaintext)
+    {
+        read_from_pka_memory(a_ctx.p_out_plaintext, &PKA->RAM[PKA_RSA_CRT_EXP_OUT_RESULT], rsa_bytes);
+    }
+
+    // Safety: clearing private keys after finished operation
+    wipe_pka_memory(&PKA->RAM[PKA_RSA_CRT_EXP_IN_DP_CRT], a_ctx.prime_size_bytes);
+    wipe_pka_memory(&PKA->RAM[PKA_RSA_CRT_EXP_IN_DQ_CRT], a_ctx.prime_size_bytes);
+    wipe_pka_memory(&PKA->RAM[PKA_RSA_CRT_EXP_IN_QINV_CRT], a_ctx.prime_size_bytes);
+    wipe_pka_memory(&PKA->RAM[PKA_RSA_CRT_EXP_IN_PRIME_P], a_ctx.prime_size_bytes);
+    wipe_pka_memory(&PKA->RAM[PKA_RSA_CRT_EXP_IN_PRIME_Q], a_ctx.prime_size_bytes);
+    wipe_pka_memory(&PKA->RAM[PKA_RSA_CRT_EXP_OUT_RESULT], rsa_bytes);
+}
+
+template<>
+void Public_key_accelerator::populate_result(Interrupt::Result<Public_key_accelerator::Mode::rsa_crt_exp>& a_result,
+                                             Interrupt::Source a_source)
+{
+    a_result.source = a_source;
+
+    if (Interrupt::Source::operation_end == a_source)
+    {
+        hkm_assert(nullptr != this->p_active_context);
+        const auto* p_ctx = static_cast<const Context<Mode::rsa_crt_exp>*>(this->p_active_context);
+        this->read(*p_ctx);
+    }
+}
+
+// --------------------------------------------------------------------------------------------------------------------
+// INTERRUPTS COMMON
+// --------------------------------------------------------------------------------------------------------------------
+void PKA_interrupt_handler(Public_key_accelerator* a_p_this)
+{
+    hkm_assert(nullptr != a_p_this);
+    hkm_assert(nullptr != a_p_this->irq_dispatcher);
+
+    Public_key_accelerator::Interrupt::Source source = Public_key_accelerator::Interrupt::operation_end;
+    if (true == bit::flag::is(PKA->SR, PKA_SR_ADDRERRF))
+    {
+        source = Public_key_accelerator::Interrupt::addr_err;
+    }
+    else if (true == bit::flag::is(PKA->SR, PKA_SR_RAMERRF))
+    {
+        source = Public_key_accelerator::Interrupt::ram_err;
+    }
+
+    bit::flag::set(&(PKA->CLRFR), PKA_CLRFR_ADDRERRFC | PKA_CLRFR_RAMERRFC | PKA_CLRFR_PROCENDFC);
+
+    a_p_this->irq_dispatcher(a_p_this, source, a_p_this->user_func, a_p_this->user_data);
+}
+
 void Public_key_accelerator::Interrupt::enable(const IRQ_config& a_irq_config)
 {
     hkm_assert(nullptr == pka_context);
@@ -250,14 +367,6 @@ void Public_key_accelerator::Interrupt::disable()
     NVIC_DisableIRQ(this->p_pka->irqn);
 
     pka_context = nullptr;
-}
-
-template<>
-void Public_key_accelerator::populate_result(Interrupt::Result<Public_key_accelerator::ecdsa_verify>& a_result,
-                                             Interrupt::Source a_source)
-{
-    a_result.is_signature_valid = Interrupt::operation_end == a_source && true == is_ecdsa_signature_valid();
-    a_result.source = a_source;
 }
 
 } // namespace xmcu::soc::st::arm::m4::wb::rm0434::peripherals
