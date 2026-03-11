@@ -7,7 +7,6 @@
 
 // std
 #include <cstdint>
-#include <utility>
 
 // externals
 #include <stm32wbxx.h>
@@ -252,45 +251,6 @@ template<> struct Public_key_accelerator::Interrupt::Callback_traits<Public_key_
     using Type = Public_key_accelerator::Interrupt::Callback_rsa_crt_exp;
 };
 
-template<Public_key_accelerator::Mode mode>
-void Public_key_accelerator::Interrupt::start(const Context<mode>& a_ctx,
-                                              const typename Callback_traits<mode>::Type& a_callback)
-{
-    Scoped_guard<nvic> guard;
-
-    this->p_pka->user_func = reinterpret_cast<void*>(a_callback.function);
-    this->p_pka->user_data = a_callback.p_user_data;
-    this->p_pka->irq_dispatcher = &Public_key_accelerator::dispach_irq<mode>;
-
-    this->p_pka->p_active_context = &a_ctx;
-
-    this->p_pka->load(a_ctx);
-
-    bit::flag::set(&(PKA->CR), std::to_underlying(mode) | PKA_CR_PROCENDIE | PKA_CR_RAMERRIE | PKA_CR_ADDRERRIE);
-    bit::flag::set(&(PKA->CR), PKA_CR_START);
-}
-
-template<Public_key_accelerator::Mode mode>
-void Public_key_accelerator::dispach_irq(Public_key_accelerator* a_p_this,
-                                         Public_key_accelerator::Interrupt::Source a_source,
-                                         void* a_p_user_func,
-                                         void* a_p_user_data)
-{
-    hkm_assert(nullptr != a_p_this);
-    hkm_assert(nullptr != a_p_user_func);
-
-    using CallbackType = typename Interrupt::Callback_traits<mode>::Type::Function;
-    auto callback_fn = reinterpret_cast<CallbackType>(a_p_user_func);
-
-    Interrupt::Result<mode> result {};
-
-    a_p_this->populate_result<mode>(result, a_source);
-
-    a_p_this->p_active_context = nullptr;
-
-    callback_fn(result);
-}
-
 } // namespace xmcu::soc::st::arm::m4::wb::rm0434::peripherals
 
 namespace xmcu::soc::st::arm::m4::wb::rm0434 {
@@ -309,10 +269,7 @@ namespace xmcu::soc {
 template<> class peripheral<st::arm::m4::wb::rm0434::peripherals::Public_key_accelerator> : private non_constructible
 {
 public:
-    static st::arm::m4::wb::rm0434::peripherals::Public_key_accelerator create()
-    {
-        return st::arm::m4::wb::rm0434::peripherals::Public_key_accelerator(IRQn_Type::PKA_IRQn);
-    }
+    static st::arm::m4::wb::rm0434::peripherals::Public_key_accelerator create();
 };
 
 } // namespace xmcu::soc

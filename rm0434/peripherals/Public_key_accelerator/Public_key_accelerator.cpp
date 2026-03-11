@@ -26,15 +26,22 @@ using namespace xmcu::soc::st::arm::m4::wb::rm0434::peripherals;
 using namespace xmcu::soc::st::arm::m4::wb::rm0434::utils;
 using namespace xmcu;
 
+constexpr std::size_t bits_in_byte = 8u;
+constexpr std::size_t bytes_in_word = 4u;
+constexpr std::size_t bits_in_word = 32u;
+
+constexpr std::size_t pka_word_mask = 0xFFFFFFFFu;
+constexpr std::size_t rsa_modulus_multiplier = 2u;
+
 Public_key_accelerator* pka_context = nullptr;
 
 std::uint32_t get_optimal_bit_size(std::uint32_t a_byte_number, std::uint8_t a_msb)
 {
     hkm_assert(0 != a_msb);
 
-    std::uint32_t position = 32u - __CLZ(a_msb);
+    std::uint32_t position = bits_in_word - __CLZ(a_msb);
 
-    return ((a_byte_number - 1u) * 8ul) + position;
+    return ((a_byte_number - 1u) * bits_in_byte) + position;
 }
 
 void write_to_pka_memory(volatile std::uint32_t* a_p_dst, const std::uint8_t* a_p_src, std::size_t a_size)
@@ -44,8 +51,8 @@ void write_to_pka_memory(volatile std::uint32_t* a_p_dst, const std::uint8_t* a_
 
     volatile std::uint32_t* dst_word = a_p_dst;
 
-    const std::size_t full_words = a_size / 4u;
-    const std::size_t remaining_bytes = a_size % 4u;
+    const std::size_t full_words = a_size / bytes_in_word;
+    const std::size_t remaining_bytes = a_size % bytes_in_word;
 
     if (remaining_bytes > 0u)
     {
@@ -55,13 +62,13 @@ void write_to_pka_memory(volatile std::uint32_t* a_p_dst, const std::uint8_t* a_
         std::memcpy(&final_word, a_p_src, head_bytes_size);
 
         std::uint32_t swapped_word = __builtin_bswap32(final_word);
-        std::uint32_t mask = (0xFFFFFFFFu << (8u * (4u - head_bytes_size)));
+        std::uint32_t mask = (pka_word_mask << (bits_in_byte * (bytes_in_word - head_bytes_size)));
 
         *dst_word = swapped_word & mask;
         dst_word++;
     }
 
-    const std::uint8_t* src_byte_current = a_p_src + a_size - 4u;
+    const std::uint8_t* src_byte_current = a_p_src + a_size - bytes_in_word;
 
     for (std::size_t i = 0u; i < full_words; ++i)
     {
@@ -74,7 +81,7 @@ void write_to_pka_memory(volatile std::uint32_t* a_p_dst, const std::uint8_t* a_
         src_byte_current -= sizeof(word);
     }
 
-    a_p_dst[(a_size + 3) / 4] = 0u;
+    a_p_dst[(a_size + 3) / bytes_in_word] = 0u;
 }
 
 void pka_write(std::size_t a_offset, const std::uint8_t* a_p_data, std::size_t a_size)
@@ -87,11 +94,11 @@ void read_from_pka_memory(std::uint8_t* a_p_dst, const volatile std::uint32_t* a
     hkm_assert(nullptr != a_p_dst);
     hkm_assert(nullptr != a_p_src);
 
-    std::size_t full_words = a_size / 4u;
-    std::size_t remaining_bytes = a_size % 4u;
+    std::size_t full_words = a_size / bytes_in_word;
+    std::size_t remaining_bytes = a_size % bytes_in_word;
 
     const volatile std::uint32_t* src_word = a_p_src;
-    std::uint8_t* dst_byte_current = a_p_dst + a_size - 4u;
+    std::uint8_t* dst_byte_current = a_p_dst + a_size - bytes_in_word;
 
     for (std::size_t i = 0u; i < full_words; ++i)
     {
@@ -106,7 +113,7 @@ void read_from_pka_memory(std::uint8_t* a_p_dst, const volatile std::uint32_t* a
     {
         std::uint32_t word = __builtin_bswap32(*src_word);
         std::uint8_t* p_word_bytes = reinterpret_cast<std::uint8_t*>(&word);
-        std::memcpy(a_p_dst, p_word_bytes + (4u - remaining_bytes), remaining_bytes);
+        std::memcpy(a_p_dst, p_word_bytes + (bytes_in_word - remaining_bytes), remaining_bytes);
     }
 }
 
@@ -151,7 +158,7 @@ Public_key_accelerator::Pooling::Status wait_for_pka_completion(xmcu::Millisecon
 void wipe_pka_memory(volatile std::uint32_t* a_p_dst, std::size_t a_size_bytes)
 {
     hkm_assert(nullptr != a_p_dst);
-    std::size_t words = (a_size_bytes + 3u) / 4u;
+    std::size_t words = (a_size_bytes + 3u) / bytes_in_word;
     for (std::size_t i = 0u; i < words; ++i)
     {
         a_p_dst[i] = 0u;
@@ -297,13 +304,13 @@ void Public_key_accelerator::load(
     pka_write(PKA_RSA_CRT_EXP_IN_PRIME_P, a_ctx.p_p, a_ctx.prime_size_bytes);
     pka_write(PKA_RSA_CRT_EXP_IN_PRIME_Q, a_ctx.p_q, a_ctx.prime_size_bytes);
 
-    pka_write(PKA_RSA_CRT_EXP_IN_EXPONENT_BASE, a_ctx.p_ciphertext, a_ctx.prime_size_bytes * 2);
+    pka_write(PKA_RSA_CRT_EXP_IN_EXPONENT_BASE, a_ctx.p_ciphertext, a_ctx.prime_size_bytes * rsa_modulus_multiplier);
 }
 
 void Public_key_accelerator::read(
     const Public_key_accelerator::Context<Public_key_accelerator::Mode::rsa_crt_exp>& a_ctx) const
 {
-    const std::size_t rsa_bytes = a_ctx.prime_size_bytes * 2;
+    const std::size_t rsa_bytes = a_ctx.prime_size_bytes * rsa_modulus_multiplier;
 
     if (nullptr != a_ctx.p_out_plaintext)
     {
@@ -377,6 +384,51 @@ void Public_key_accelerator::Interrupt::disable()
     pka_context = nullptr;
 }
 
+template<Public_key_accelerator::Mode mode>
+void Public_key_accelerator::Interrupt::start(const Context<mode>& a_ctx,
+                                              const typename Callback_traits<mode>::Type& a_callback)
+{
+    Scoped_guard<nvic> guard;
+
+    this->p_pka->user_func = reinterpret_cast<void*>(a_callback.function);
+    this->p_pka->user_data = a_callback.p_user_data;
+    this->p_pka->irq_dispatcher = &Public_key_accelerator::dispach_irq<mode>;
+
+    this->p_pka->p_active_context = &a_ctx;
+
+    this->p_pka->load(a_ctx);
+
+    bit::flag::set(&(PKA->CR), std::to_underlying(mode) | PKA_CR_PROCENDIE | PKA_CR_RAMERRIE | PKA_CR_ADDRERRIE);
+    bit::flag::set(&(PKA->CR), PKA_CR_START);
+}
+
+template<Public_key_accelerator::Mode mode>
+void Public_key_accelerator::dispach_irq(Public_key_accelerator* a_p_this,
+                                         Public_key_accelerator::Interrupt::Source a_source,
+                                         void* a_p_user_func,
+                                         void* a_p_user_data)
+{
+    hkm_assert(nullptr != a_p_this);
+    hkm_assert(nullptr != a_p_user_func);
+
+    using CallbackType = typename Interrupt::Callback_traits<mode>::Type::Function;
+    auto callback_fn = reinterpret_cast<CallbackType>(a_p_user_func);
+
+    Interrupt::Result<mode> result {};
+    a_p_this->populate_result<mode>(result, a_source);
+
+    a_p_this->p_active_context = nullptr;
+    callback_fn(result);
+}
+
+template void Public_key_accelerator::Interrupt::start<Public_key_accelerator::Mode::ecdsa_verify>(
+    const Context<Public_key_accelerator::Mode::ecdsa_verify>&,
+    const Interrupt::Callback_traits<Public_key_accelerator::Mode::ecdsa_verify>::Type&);
+
+template void Public_key_accelerator::Interrupt::start<Public_key_accelerator::Mode::rsa_crt_exp>(
+    const Context<Public_key_accelerator::Mode::rsa_crt_exp>&,
+    const Interrupt::Callback_traits<Public_key_accelerator::Mode::rsa_crt_exp>::Type&);
+
 } // namespace xmcu::soc::st::arm::m4::wb::rm0434::peripherals
 
 namespace xmcu::soc::st::arm::m4::wb::rm0434 {
@@ -394,3 +446,13 @@ void rcc<Public_key_accelerator>::disable()
 }
 
 } // namespace xmcu::soc::st::arm::m4::wb::rm0434
+
+namespace xmcu::soc {
+
+st::arm::m4::wb::rm0434::peripherals::Public_key_accelerator
+peripheral<st::arm::m4::wb::rm0434::peripherals::Public_key_accelerator>::create()
+{
+    return st::arm::m4::wb::rm0434::peripherals::Public_key_accelerator(IRQn_Type::PKA_IRQn);
+}
+
+} // namespace xmcu::soc
