@@ -37,15 +37,15 @@ std::uint32_t get_optimal_bit_size(std::uint32_t a_byte_number, std::uint8_t a_m
     return ((a_byte_number - 1u) * 8ul) + position;
 }
 
-void copy_to_pka_memory(volatile std::uint32_t* a_p_dst, const std::uint8_t* a_p_src, std::size_t a_size)
+void write_to_pka_memory(volatile std::uint32_t* a_p_dst, const std::uint8_t* a_p_src, std::size_t a_size)
 {
     hkm_assert(nullptr != a_p_dst);
     hkm_assert(nullptr != a_p_src);
 
     volatile std::uint32_t* dst_word = a_p_dst;
 
-    std::size_t full_words = a_size / 4u;
-    std::size_t remaining_bytes = a_size % 4u;
+    const std::size_t full_words = a_size / 4u;
+    const std::size_t remaining_bytes = a_size % 4u;
 
     if (remaining_bytes > 0u)
     {
@@ -73,15 +73,13 @@ void copy_to_pka_memory(volatile std::uint32_t* a_p_dst, const std::uint8_t* a_p
         dst_word++;
         src_byte_current -= sizeof(word);
     }
+
+    a_p_dst[(a_size + 3) / 4] = 0u;
 }
 
-void write_to_pka_memory(volatile std::uint32_t* a_p_dst, const std::uint8_t* a_p_src, std::size_t a_size)
+void pka_write(std::size_t a_offset, const std::uint8_t* a_p_data, std::size_t a_size)
 {
-    hkm_assert(nullptr != a_p_dst);
-    hkm_assert(nullptr != a_p_src);
-
-    copy_to_pka_memory(a_p_dst, a_p_src, a_size);
-    a_p_dst[(a_size + 3) / 4] = 0u;
+    write_to_pka_memory(&PKA->RAM[a_offset], a_p_data, a_size);
 }
 
 void read_from_pka_memory(std::uint8_t* a_p_dst, const volatile std::uint32_t* a_p_src, std::size_t a_size)
@@ -117,6 +115,12 @@ bool is_ecdsa_signature_valid()
     return 0u == PKA->RAM[PKA_ECDSA_VERIF_OUT_RESULT];
 }
 
+void reset_pka()
+{
+    bit::flag::clear(&(PKA->CR), PKA_CR_EN);
+    bit::flag::set(&(PKA->CR), PKA_CR_EN);
+}
+
 Public_key_accelerator::Pooling::Status wait_for_pka_completion(xmcu::Milliseconds a_timeout)
 {
     const std::uint64_t end = tick_counter<xmcu::Milliseconds>::get() + a_timeout.get();
@@ -140,8 +144,7 @@ Public_key_accelerator::Pooling::Status wait_for_pka_completion(xmcu::Millisecon
     }
 
     // Timeout
-    bit::flag::clear(&(PKA->CR), PKA_CR_EN);
-    bit::flag::set(&(PKA->CR), PKA_CR_EN);
+    reset_pka();
     return Public_key_accelerator::Pooling::Status::timeout;
 }
 
@@ -153,6 +156,17 @@ void wipe_pka_memory(volatile std::uint32_t* a_p_dst, std::size_t a_size_bytes)
     {
         a_p_dst[i] = 0u;
     }
+}
+
+void clear_pka_flags()
+{
+    bit::flag::set(&(PKA->CLRFR), PKA_CLRFR_PROCENDFC | PKA_CLRFR_RAMERRFC | PKA_CLRFR_ADDRERRFC);
+}
+
+void start_operation(Public_key_accelerator::Mode a_mode)
+{
+    bit::flag::set(&(PKA->CR), PKA_CR_MODE, std::to_underlying(a_mode));
+    bit::flag::set(&(PKA->CR), PKA_CR_START);
 }
 
 } // namespace
@@ -172,18 +186,18 @@ namespace xmcu::soc::st::arm::m4::wb::rm0434::peripherals {
 void Public_key_accelerator::enable()
 {
     PKA->CR = PKA_CR_EN;
-    bit::flag::set(&(PKA->CLRFR), PKA_CLRFR_PROCENDFC | PKA_CLRFR_RAMERRFC | PKA_CLRFR_ADDRERRFC);
+    clear_pka_flags();
 }
 
 void Public_key_accelerator::disable()
 {
     PKA->CR = 0u;
-    bit::flag::set(&(PKA->CLRFR), PKA_CLRFR_PROCENDFC | PKA_CLRFR_RAMERRFC | PKA_CLRFR_ADDRERRFC);
+    clear_pka_flags();
 }
 
 bool Public_key_accelerator::is_enabled() const
 {
-    return PKA_CR_EN == bit::flag::get(PKA->CLRFR, PKA_CR_EN);
+    return bit::flag::is(PKA->CR, PKA_CR_EN);
 }
 
 // --------------------------------------------------------------------------------------------------------------------
@@ -199,12 +213,11 @@ Public_key_accelerator::Pooling::execute(const Context<Mode::ecdsa_verify>& a_ct
 
     this->p_pka->load(a_ctx);
 
-    bit::flag::set(&(PKA->CR),
-                   PKA_CR_MODE | PKA_CR_PROCENDIE | PKA_CR_RAMERRIE | PKA_CR_ADDRERRIE,
-                   std::to_underlying(Mode::ecdsa_verify));
-    bit::flag::set(&(PKA->CR), PKA_CR_START);
+    start_operation(Mode::ecdsa_verify);
 
     Status status = wait_for_pka_completion(a_timeout);
+
+    clear_pka_flags();
 
     Result<Mode::ecdsa_verify> result = { .status = status, .is_signature_valid = false };
 
@@ -216,7 +229,6 @@ Public_key_accelerator::Pooling::execute(const Context<Mode::ecdsa_verify>& a_ct
         }
     }
 
-    bit::flag::set(&(PKA->CLRFR), PKA_CLRFR_PROCENDFC | PKA_CLRFR_RAMERRFC | PKA_CLRFR_ADDRERRFC);
     return result;
 }
 
@@ -227,18 +239,16 @@ void Public_key_accelerator::load(
     PKA->RAM[PKA_ECDSA_VERIF_IN_MOD_NB_BITS] = get_optimal_bit_size(a_ctx.modulus_size, *(a_ctx.p_modulus));
     PKA->RAM[PKA_ECDSA_VERIF_IN_A_COEFF_SIGN] = a_ctx.coef_sign;
 
-    write_to_pka_memory(&PKA->RAM[PKA_ECDSA_VERIF_IN_A_COEFF], a_ctx.p_coef, a_ctx.modulus_size);
-    write_to_pka_memory(&PKA->RAM[PKA_ECDSA_VERIF_IN_MOD_GF], a_ctx.p_modulus, a_ctx.modulus_size);
-    write_to_pka_memory(&PKA->RAM[PKA_ECDSA_VERIF_IN_INITIAL_POINT_X], a_ctx.p_base_point_x, a_ctx.modulus_size);
-    write_to_pka_memory(&PKA->RAM[PKA_ECDSA_VERIF_IN_INITIAL_POINT_Y], a_ctx.p_base_point_y, a_ctx.modulus_size);
-    write_to_pka_memory(
-        &PKA->RAM[PKA_ECDSA_VERIF_IN_PUBLIC_KEY_POINT_X], a_ctx.p_pub_key_curve_pt_x, a_ctx.modulus_size);
-    write_to_pka_memory(
-        &PKA->RAM[PKA_ECDSA_VERIF_IN_PUBLIC_KEY_POINT_Y], a_ctx.p_pub_key_curve_pt_y, a_ctx.modulus_size);
-    write_to_pka_memory(&PKA->RAM[PKA_ECDSA_VERIF_IN_SIGNATURE_R], a_ctx.p_r_sign, a_ctx.prime_order_size);
-    write_to_pka_memory(&PKA->RAM[PKA_ECDSA_VERIF_IN_SIGNATURE_S], a_ctx.p_s_sign, a_ctx.prime_order_size);
-    write_to_pka_memory(&PKA->RAM[PKA_ECDSA_VERIF_IN_HASH_E], a_ctx.p_hash, a_ctx.prime_order_size);
-    write_to_pka_memory(&PKA->RAM[PKA_ECDSA_VERIF_IN_ORDER_N], a_ctx.p_prime_order, a_ctx.prime_order_size);
+    pka_write(PKA_ECDSA_VERIF_IN_A_COEFF, a_ctx.p_coef, a_ctx.modulus_size);
+    pka_write(PKA_ECDSA_VERIF_IN_MOD_GF, a_ctx.p_modulus, a_ctx.modulus_size);
+    pka_write(PKA_ECDSA_VERIF_IN_INITIAL_POINT_X, a_ctx.p_base_point_x, a_ctx.modulus_size);
+    pka_write(PKA_ECDSA_VERIF_IN_INITIAL_POINT_Y, a_ctx.p_base_point_y, a_ctx.modulus_size);
+    pka_write(PKA_ECDSA_VERIF_IN_PUBLIC_KEY_POINT_X, a_ctx.p_pub_key_curve_pt_x, a_ctx.modulus_size);
+    pka_write(PKA_ECDSA_VERIF_IN_PUBLIC_KEY_POINT_Y, a_ctx.p_pub_key_curve_pt_y, a_ctx.modulus_size);
+    pka_write(PKA_ECDSA_VERIF_IN_SIGNATURE_R, a_ctx.p_r_sign, a_ctx.prime_order_size);
+    pka_write(PKA_ECDSA_VERIF_IN_SIGNATURE_S, a_ctx.p_s_sign, a_ctx.prime_order_size);
+    pka_write(PKA_ECDSA_VERIF_IN_HASH_E, a_ctx.p_hash, a_ctx.prime_order_size);
+    pka_write(PKA_ECDSA_VERIF_IN_ORDER_N, a_ctx.p_prime_order, a_ctx.prime_order_size);
 }
 
 template<>
@@ -262,19 +272,17 @@ Public_key_accelerator::Pooling::execute(const Context<Mode::rsa_crt_exp>& a_ctx
 
     this->p_pka->load(a_ctx);
 
-    bit::flag::set(&(PKA->CR),
-                   PKA_CR_MODE | PKA_CR_PROCENDIE | PKA_CR_RAMERRIE | PKA_CR_ADDRERRIE,
-                   std::to_underlying(Mode::rsa_crt_exp));
-    bit::flag::set(&(PKA->CR), PKA_CR_START);
+    start_operation(Mode::rsa_crt_exp);
 
     Status status = wait_for_pka_completion(a_timeout);
+
+    clear_pka_flags();
 
     if (Pooling::Status::ok == status)
     {
         this->p_pka->read(a_ctx);
     }
 
-    bit::flag::set(&(PKA->CLRFR), PKA_CLRFR_PROCENDFC | PKA_CLRFR_RAMERRFC | PKA_CLRFR_ADDRERRFC);
     return { .status = status };
 }
 
@@ -283,13 +291,13 @@ void Public_key_accelerator::load(
 {
     PKA->RAM[PKA_RSA_CRT_EXP_IN_MOD_NB_BITS] = a_ctx.modulus_size_bits;
 
-    write_to_pka_memory(&PKA->RAM[PKA_RSA_CRT_EXP_IN_DP_CRT], a_ctx.p_dp, a_ctx.prime_size_bytes);
-    write_to_pka_memory(&PKA->RAM[PKA_RSA_CRT_EXP_IN_DQ_CRT], a_ctx.p_dq, a_ctx.prime_size_bytes);
-    write_to_pka_memory(&PKA->RAM[PKA_RSA_CRT_EXP_IN_QINV_CRT], a_ctx.p_qinv, a_ctx.prime_size_bytes);
-    write_to_pka_memory(&PKA->RAM[PKA_RSA_CRT_EXP_IN_PRIME_P], a_ctx.p_p, a_ctx.prime_size_bytes);
-    write_to_pka_memory(&PKA->RAM[PKA_RSA_CRT_EXP_IN_PRIME_Q], a_ctx.p_q, a_ctx.prime_size_bytes);
+    pka_write(PKA_RSA_CRT_EXP_IN_DP_CRT, a_ctx.p_dp, a_ctx.prime_size_bytes);
+    pka_write(PKA_RSA_CRT_EXP_IN_DQ_CRT, a_ctx.p_dq, a_ctx.prime_size_bytes);
+    pka_write(PKA_RSA_CRT_EXP_IN_QINV_CRT, a_ctx.p_qinv, a_ctx.prime_size_bytes);
+    pka_write(PKA_RSA_CRT_EXP_IN_PRIME_P, a_ctx.p_p, a_ctx.prime_size_bytes);
+    pka_write(PKA_RSA_CRT_EXP_IN_PRIME_Q, a_ctx.p_q, a_ctx.prime_size_bytes);
 
-    write_to_pka_memory(&PKA->RAM[PKA_RSA_CRT_EXP_IN_EXPONENT_BASE], a_ctx.p_ciphertext, a_ctx.prime_size_bytes * 2);
+    pka_write(PKA_RSA_CRT_EXP_IN_EXPONENT_BASE, a_ctx.p_ciphertext, a_ctx.prime_size_bytes * 2);
 }
 
 void Public_key_accelerator::read(
@@ -343,7 +351,7 @@ void PKA_interrupt_handler(Public_key_accelerator* a_p_this)
         source = Public_key_accelerator::Interrupt::ram_err;
     }
 
-    bit::flag::set(&(PKA->CLRFR), PKA_CLRFR_ADDRERRFC | PKA_CLRFR_RAMERRFC | PKA_CLRFR_PROCENDFC);
+    clear_pka_flags();
 
     a_p_this->irq_dispatcher(a_p_this, source, a_p_this->user_func, a_p_this->user_data);
 }

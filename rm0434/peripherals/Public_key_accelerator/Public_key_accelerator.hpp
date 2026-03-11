@@ -29,24 +29,26 @@ class Public_key_accelerator : private xmcu::Non_copyable
 public:
     enum class Mode : std::uint32_t
     {
-        montgomery_modular_exp = 0u,
-        montgomery_param_only = PKA_CR_MODE_0,
-        modular_exp_only = PKA_CR_MODE_1,
-        ecc_scalar = PKA_CR_MODE_5,
-        ecc_scalar_fast = PKA_CR_MODE_1 | PKA_CR_MODE_5,
-        ecdsa_sign = PKA_CR_MODE_2 | PKA_CR_MODE_5,
+        // Only uncommented modes are supported so far
+
+        // montgomery_modular_exp = 0u,
+        // montgomery_param_only = PKA_CR_MODE_0,
+        // modular_exp_only = PKA_CR_MODE_1,
+        // ecc_scalar = PKA_CR_MODE_5,
+        // ecc_scalar_fast = PKA_CR_MODE_1 | PKA_CR_MODE_5,
+        // ecdsa_sign = PKA_CR_MODE_2 | PKA_CR_MODE_5,
         ecdsa_verify = PKA_CR_MODE_1 | PKA_CR_MODE_2 | PKA_CR_MODE_5,
-        ecc_point_check = PKA_CR_MODE_3 | PKA_CR_MODE_5,
+        // ecc_point_check = PKA_CR_MODE_3 | PKA_CR_MODE_5,
         rsa_crt_exp = PKA_CR_MODE_0 | PKA_CR_MODE_1 | PKA_CR_MODE_2,
-        modular_inversion = PKA_CR_MODE_3,
-        arithmetic_add = PKA_CR_MODE_0 | PKA_CR_MODE_3,
-        arithmetic_sub = PKA_CR_MODE_1 | PKA_CR_MODE_3,
-        arithmetic_mul = PKA_CR_MODE_0 | PKA_CR_MODE_1 | PKA_CR_MODE_3,
-        arithmetic_comp = PKA_CR_MODE_2 | PKA_CR_MODE_3,
-        modular_reduction = PKA_CR_MODE_0 | PKA_CR_MODE_2 | PKA_CR_MODE_3,
-        modular_add = PKA_CR_MODE_1 | PKA_CR_MODE_2 | PKA_CR_MODE_3,
-        modular_sub = PKA_CR_MODE_0 | PKA_CR_MODE_1 | PKA_CR_MODE_2 | PKA_CR_MODE_3,
-        montgomery_mul_small = PKA_CR_MODE_4,
+        // modular_inversion = PKA_CR_MODE_3,
+        // arithmetic_add = PKA_CR_MODE_0 | PKA_CR_MODE_3,
+        // arithmetic_sub = PKA_CR_MODE_1 | PKA_CR_MODE_3,
+        // arithmetic_mul = PKA_CR_MODE_0 | PKA_CR_MODE_1 | PKA_CR_MODE_3,
+        // arithmetic_comp = PKA_CR_MODE_2 | PKA_CR_MODE_3,
+        // modular_reduction = PKA_CR_MODE_0 | PKA_CR_MODE_2 | PKA_CR_MODE_3,
+        // modular_add = PKA_CR_MODE_1 | PKA_CR_MODE_2 | PKA_CR_MODE_3,
+        // modular_sub = PKA_CR_MODE_0 | PKA_CR_MODE_1 | PKA_CR_MODE_2 | PKA_CR_MODE_3,
+        // montgomery_mul_small = PKA_CR_MODE_4,
     };
 
     using enum Mode;
@@ -283,6 +285,8 @@ void Public_key_accelerator::dispach_irq(Public_key_accelerator* a_p_this,
     Interrupt::Result<mode> result {};
 
     a_p_this->populate_result<mode>(result, a_source);
+
+    a_p_this->p_active_context = nullptr;
 
     callback_fn(result);
 }
