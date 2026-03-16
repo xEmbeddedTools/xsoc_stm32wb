@@ -7,6 +7,7 @@
 #include <rm0434/peripherals/Public_key_accelerator/Public_key_accelerator.hpp>
 
 // std
+#include <climits>
 #include <cstring>
 #include <utility>
 
@@ -26,10 +27,9 @@ using namespace xmcu::soc::st::arm::m4::wb::rm0434::peripherals;
 using namespace xmcu::soc::st::arm::m4::wb::rm0434::utils;
 using namespace xmcu;
 
-constexpr std::size_t bits_in_byte = 8u;
-constexpr std::size_t bytes_in_word = 4u;
-constexpr std::size_t bits_in_word = 32u;
-
+constexpr std::size_t bytes_in_word = sizeof(std::uint32_t);
+constexpr std::size_t bits_in_word = bytes_in_word * CHAR_BIT;
+ 
 constexpr std::size_t pka_word_mask = 0xFFFFFFFFu;
 constexpr std::size_t rsa_modulus_multiplier = 2u;
 
@@ -41,7 +41,7 @@ std::uint32_t get_optimal_bit_size(std::uint32_t a_byte_number, std::uint8_t a_m
 
     std::uint32_t position = bits_in_word - __CLZ(a_msb);
 
-    return ((a_byte_number - 1u) * bits_in_byte) + position;
+    return ((a_byte_number - 1u) * CHAR_BIT) + position;
 }
 
 void write_to_pka_memory(volatile std::uint32_t* a_p_dst, const std::uint8_t* a_p_src, std::size_t a_size)
@@ -62,7 +62,7 @@ void write_to_pka_memory(volatile std::uint32_t* a_p_dst, const std::uint8_t* a_
         std::memcpy(&final_word, a_p_src, head_bytes_size);
 
         std::uint32_t swapped_word = __builtin_bswap32(final_word);
-        std::uint32_t mask = (pka_word_mask << (bits_in_byte * (bytes_in_word - head_bytes_size)));
+        std::uint32_t mask = (pka_word_mask << (CHAR_BIT * (bytes_in_word - head_bytes_size)));
 
         *dst_word = swapped_word & mask;
         dst_word++;
