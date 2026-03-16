@@ -22,25 +22,32 @@ using namespace xmcu;
 using namespace xmcu::soc::st::arm::m4::wb::rm0434::utils;
 using namespace xmcu::soc::st::arm::m4::wb::rm0434::peripherals;
 
+std::uint32_t pack_bytes_to_word(const std::uint8_t* a_p_bytes)
+{
+    std::uint32_t word;
+    std::memcpy(&word, a_p_bytes, sizeof(std::uint32_t));
+    return __builtin_bswap32(word);
+}
+
 void load_key(AES_TypeDef* p_registers, AES::Key a_key)
 {
     if (a_key.size == AES::Key::Key_size::bits_256)
     {
-        p_registers->KEYR7 = a_key.p_data[0];
-        p_registers->KEYR6 = a_key.p_data[1];
-        p_registers->KEYR5 = a_key.p_data[2];
-        p_registers->KEYR4 = a_key.p_data[3];
-        p_registers->KEYR3 = a_key.p_data[4];
-        p_registers->KEYR2 = a_key.p_data[5];
-        p_registers->KEYR1 = a_key.p_data[6];
-        p_registers->KEYR0 = a_key.p_data[7];
+        p_registers->KEYR7 = pack_bytes_to_word(&a_key.p_data[0]);
+        p_registers->KEYR6 = pack_bytes_to_word(&a_key.p_data[4]);
+        p_registers->KEYR5 = pack_bytes_to_word(&a_key.p_data[8]);
+        p_registers->KEYR4 = pack_bytes_to_word(&a_key.p_data[12]);
+        p_registers->KEYR3 = pack_bytes_to_word(&a_key.p_data[16]);
+        p_registers->KEYR2 = pack_bytes_to_word(&a_key.p_data[20]);
+        p_registers->KEYR1 = pack_bytes_to_word(&a_key.p_data[24]);
+        p_registers->KEYR0 = pack_bytes_to_word(&a_key.p_data[28]);
     }
     else
     {
-        p_registers->KEYR3 = a_key.p_data[0];
-        p_registers->KEYR2 = a_key.p_data[1];
-        p_registers->KEYR1 = a_key.p_data[2];
-        p_registers->KEYR0 = a_key.p_data[3];
+        p_registers->KEYR3 = pack_bytes_to_word(&a_key.p_data[0]);
+        p_registers->KEYR2 = pack_bytes_to_word(&a_key.p_data[4]);
+        p_registers->KEYR1 = pack_bytes_to_word(&a_key.p_data[8]);
+        p_registers->KEYR0 = pack_bytes_to_word(&a_key.p_data[12]);
     }
 }
 
@@ -109,16 +116,16 @@ void init_mode(AES::Operation a_operation, volatile std::uint32_t* a_p_cr, AES::
     *a_p_cr = cr_val;
 }
 
-void load_iv(AES_TypeDef* p_registers, const std::uint32_t* p_iv)
+void load_iv(AES_TypeDef* p_registers, const std::uint8_t* p_iv)
 {
     if (nullptr == p_iv)
     {
         return;
     }
 
-    p_registers->IVR3 = p_iv[0];
-    p_registers->IVR2 = p_iv[1];
-    p_registers->IVR1 = p_iv[2];
+    p_registers->IVR3 = pack_bytes_to_word(&p_iv[0]);
+    p_registers->IVR2 = pack_bytes_to_word(&p_iv[4]);
+    p_registers->IVR1 = pack_bytes_to_word(&p_iv[8]);
     p_registers->IVR0 = 0x00000002;
 }
 

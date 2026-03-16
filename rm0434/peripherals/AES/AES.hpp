@@ -44,7 +44,7 @@ public:
 
     using Block = std::span<std::uint8_t, 16>;
     using Const_block = std::span<const std::uint8_t, 16>;
-    using Iv = std::span<const std::uint32_t, 3>;
+    using Iv = std::span<const std::uint8_t, 12>;
 
     struct Key
     {
@@ -54,15 +54,15 @@ public:
             bits_256 = AES_CR_KEYSIZE,
         };
 
-        const std::uint32_t* p_data;
+        const std::uint8_t* p_data;
         Key_size size;
 
-        constexpr Key(std::span<const std::uint32_t, 4> a_key)
+        constexpr Key(std::span<const std::uint8_t, 16> a_key)
             : p_data(a_key.data())
             , size(Key_size::bits_128)
         {
         }
-        constexpr Key(std::span<const std::uint32_t, 8> a_key)
+        constexpr Key(std::span<const std::uint8_t, 32> a_key)
             : p_data(a_key.data())
             , size(Key_size::bits_256)
         {
