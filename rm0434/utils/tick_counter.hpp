@@ -40,6 +40,7 @@ public:
 
     template<typename Timer_t> static void start(bool a_call_handler_on_start = false) = delete;
     template<typename Timer_t> static void stop() = delete;
+    template<typename Timer_t> static void resume_with_reload_reload() = delete;
 
     static std::uint64_t get();
 
@@ -61,4 +62,5 @@ template<> void tick_counter<Milliseconds>::disable<soc::Systick>();
 
 template<> void tick_counter<Milliseconds>::start<Systick>(bool a_start_handler_immediately);
 template<> void tick_counter<Milliseconds>::stop<Systick>();
+template<> void tick_counter<Milliseconds>::resume_with_reload_reload<Systick>();
 } // namespace xmcu::soc::st::arm::m4::wb::rm0434::utils

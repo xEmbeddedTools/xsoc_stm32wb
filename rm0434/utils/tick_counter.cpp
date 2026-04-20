@@ -66,8 +66,16 @@ template<> void tick_counter<Milliseconds>::start<Systick>(bool a_call_handler_o
         callback.function(cnt, callback.p_user_data);
     }
 }
+
 template<> void tick_counter<Milliseconds>::stop<Systick>()
 {
     reinterpret_cast<Systick*>(p_timer)->stop();
+}
+
+template<> void tick_counter<Milliseconds>::resume_with_reload_reload<Systick>()
+{
+    hkm_assert(nullptr != p_timer);
+    auto systick = reinterpret_cast<Systick*>(p_timer);
+    systick->reload_reload(hclk<1u>::get_frequency_Hz() / 1000u - 1);
 }
 } // namespace xmcu::soc::st::arm::m4::wb::rm0434::utils
