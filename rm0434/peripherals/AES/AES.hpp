@@ -32,6 +32,9 @@ public:
     enum class _2;
 #endif
 
+    AES(AES&& other) noexcept;
+    AES& operator=(AES&& other) noexcept;
+
     enum class Operation
     {
         ecb_encryption,
@@ -97,7 +100,7 @@ public:
             AES* p_aes;
         };
 
-        class GcmContext
+        class GcmContext : private xmcu::Non_copyable
         {
         public:
             Processing_result add_header(Const_block a_header,
