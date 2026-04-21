@@ -132,6 +132,17 @@ public:
         template<Operation op> Init_result<GcmContext> init(Key a_key, Iv a_iv, xmcu::Milliseconds a_timeout = 10_ms);
 
     private:
+        explicit Pooling(AES* a_p_aes)
+            : p_aes(a_p_aes)
+        {
+        }
+
+        Pooling(Pooling&& other, AES* a_p_new_aes) noexcept
+            : p_aes(a_p_new_aes)
+        {
+            other.p_aes = nullptr;
+        }
+
         Init_result<GcmContext>
         init_gcm(AES::Operation a_operation, Key a_key, Iv a_iv, xmcu::Milliseconds a_timeout = 10_ms);
 
@@ -151,10 +162,10 @@ public:
 
 private:
     AES(AES_TypeDef* a_p_registers, IRQn_Type a_irqn)
-        : p_registers(a_p_registers)
+        : pooling(this)
+        , p_registers(a_p_registers)
         , irqn(a_irqn)
     {
-        this->pooling.p_aes = this;
     }
 
     void enable();

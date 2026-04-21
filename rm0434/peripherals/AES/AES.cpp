@@ -354,10 +354,10 @@ AES::Pooling::init_gcm(AES::Operation a_operation, AES::Key a_key, AES::Iv a_iv,
 }
 
 AES::AES(AES&& other) noexcept
-    : p_registers(std::exchange(other.p_registers, nullptr))
+    : pooling(std::move(other.pooling), this)
+    , p_registers(std::exchange(other.p_registers, nullptr))
     , irqn(other.irqn)
 {
-    this->pooling.p_aes = this;
 }
 
 AES& AES::operator=(AES&& other) noexcept
