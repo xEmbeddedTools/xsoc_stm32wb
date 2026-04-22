@@ -353,6 +353,25 @@ AES::Pooling::init_gcm(AES::Operation a_operation, AES::Key a_key, AES::Iv a_iv,
     return GcmContext(this->p_aes);
 }
 
+AES::AES(AES&& other) noexcept
+    : pooling(std::move(other.pooling), this)
+    , p_registers(std::exchange(other.p_registers, nullptr))
+    , irqn(other.irqn)
+{
+}
+
+AES& AES::operator=(AES&& other) noexcept
+{
+    if (this != &other)
+    {
+        this->p_registers = std::exchange(other.p_registers, nullptr);
+        this->irqn = other.irqn;
+
+        this->pooling.p_aes = this;
+    }
+    return *this;
+}
+
 } // namespace xmcu::soc::st::arm::m4::wb::rm0434::peripherals
 
 namespace xmcu::soc::st::arm::m4::wb::rm0434 {
