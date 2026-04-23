@@ -72,10 +72,10 @@ template<> void tick_counter<Milliseconds>::stop<Systick>()
     reinterpret_cast<Systick*>(p_timer)->stop();
 }
 
-template<> void tick_counter<Milliseconds>::resume_with_reload_reload<Systick>()
+template<> void tick_counter<Milliseconds>::update_and_resume<Systick>()
 {
     hkm_assert(nullptr != p_timer);
     auto systick = reinterpret_cast<Systick*>(p_timer);
-    systick->reload_reload(hclk<1u>::get_frequency_Hz() / 1000u - 1);
+    systick->update_and_reload_value(hclk<1u>::get_frequency_Hz() / 1000u - 1);
 }
 } // namespace xmcu::soc::st::arm::m4::wb::rm0434::utils
