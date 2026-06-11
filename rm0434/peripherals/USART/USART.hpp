@@ -7,7 +7,6 @@
 
 // std
 #include <cstddef>
-#include <iterator>
 
 // external
 #include <stm32wbxx.h>
