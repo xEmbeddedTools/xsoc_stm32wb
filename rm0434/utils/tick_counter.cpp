@@ -21,7 +21,26 @@ std::uint16_t auto_reload = 0x0u;
 
 std::uint64_t tick_counter<Milliseconds>::get()
 {
-    return cnt;
+    // Last / most significant word. These lines do not emit any instructions.
+    volatile std::uint32_t& cnt_lsw = reinterpret_cast<volatile std::uint32_t*>(&cnt)[0];
+    volatile std::uint32_t& cnt_msw = reinterpret_cast<volatile std::uint32_t*>(&cnt)[1];
+
+    for (std::uint32_t i = 0; true; ++i)
+    {
+        auto m1 = cnt_msw;
+        auto l1 = cnt_lsw;
+        auto m2 = cnt_msw;
+        if (m1 == m2)
+        {
+            // Usually just performs the return. The returned value is already prepared during assignment.
+            return std::uint64_t { m1 } << 32 | l1;
+        }
+        if (i > 3) // non-standard break condition to optimize the fast path of the loop
+        {
+            break;
+        }
+    }
+    return 0; // what can I do?
 }
 
 void tick_counter<Milliseconds>::register_callback(const Callback& a_callback)
