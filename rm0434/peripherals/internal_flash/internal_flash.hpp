@@ -52,7 +52,7 @@ public:
         disabled = 0x0u,
         data = FLASH_ACR_DCEN,
         instructions = FLASH_ACR_ICEN,
-        prefetech = FLASH_ACR_PRFTEN
+        prefetch = FLASH_ACR_PRFTEN
     };
 
     enum class Status_flag : std::uint32_t
