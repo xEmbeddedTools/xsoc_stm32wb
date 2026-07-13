@@ -15,7 +15,6 @@
 
 // xmcu
 #include <rm0434/utils/tick_counter.hpp>
-#include <soc/Scoped_guard.hpp>
 #include <xmcu/Duration.hpp>
 #include <xmcu/assertion.hpp>
 #include <xmcu/bit.hpp>

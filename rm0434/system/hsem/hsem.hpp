@@ -9,10 +9,10 @@
 #include <stm32wbxx.h>
 
 // xmcu
-#include <soc/Scoped_guard.hpp>
 #include <xmcu/Duration.hpp>
 #include <xmcu/Limited.hpp>
 #include <xmcu/Non_copyable.hpp>
+#include <xmcu/Scoped_guard.hpp>
 #include <xmcu/non_constructible.hpp>
 
 namespace xmcu::soc::st::arm::m4::wb::rm0434::system {
@@ -91,26 +91,26 @@ public:
 };
 } // namespace xmcu::soc::st::arm::m4::wb::rm0434::system
 
-namespace xmcu::soc {
-template<> class Scoped_guard<st::arm::m4::wb::rm0434::system::hsem::_1_step> : private Non_copyable
+namespace xmcu {
+template<> class Scoped_guard<soc::st::arm::m4::wb::rm0434::system::hsem::_1_step> : private Non_copyable
 {
 public:
     Scoped_guard(Limited<std::uint8_t, 0, 31> a_semaphore_id)
         : semaphore_id(a_semaphore_id)
     {
-        st::arm::m4::wb::rm0434::system::hsem::_1_step::lock(a_semaphore_id);
+        soc::st::arm::m4::wb::rm0434::system::hsem::_1_step::lock(a_semaphore_id);
         this->locked = true;
     }
 
     Scoped_guard(Limited<std::uint8_t, 0, 31> a_semaphore_id, Milliseconds a_timeout)
         : semaphore_id(a_semaphore_id)
     {
-        this->locked = st::arm::m4::wb::rm0434::system::hsem::_1_step::try_lock(a_semaphore_id, a_timeout);
+        this->locked = soc::st::arm::m4::wb::rm0434::system::hsem::_1_step::try_lock(a_semaphore_id, a_timeout);
     }
 
     ~Scoped_guard()
     {
-        st::arm::m4::wb::rm0434::system::hsem::_1_step::unlock(this->semaphore_id);
+        soc::st::arm::m4::wb::rm0434::system::hsem::_1_step::unlock(this->semaphore_id);
     }
 
     bool is_locked() const
@@ -123,7 +123,7 @@ private:
     bool locked;
 };
 
-template<> class Scoped_guard<st::arm::m4::wb::rm0434::system::hsem::_2_step> : private Non_copyable
+template<> class Scoped_guard<soc::st::arm::m4::wb::rm0434::system::hsem::_2_step> : private Non_copyable
 {
 public:
     Scoped_guard(Limited<std::uint8_t, 0, 31> a_semaphore_id, std::uint8_t a_process_id)
@@ -131,20 +131,20 @@ public:
         , process_id(a_process_id)
         , locked(false)
     {
-        st::arm::m4::wb::rm0434::system::hsem::_2_step::lock(a_semaphore_id, a_process_id);
+        soc::st::arm::m4::wb::rm0434::system::hsem::_2_step::lock(a_semaphore_id, a_process_id);
         this->locked = true;
     }
 
     Scoped_guard(Limited<std::uint8_t, 0, 31> a_semaphore_id, std::uint8_t a_process_id, Milliseconds a_timeout)
         : semaphore_id(a_semaphore_id)
         , process_id(a_process_id)
-        , locked(st::arm::m4::wb::rm0434::system::hsem::_2_step::try_lock(a_semaphore_id, a_process_id, a_timeout))
+        , locked(soc::st::arm::m4::wb::rm0434::system::hsem::_2_step::try_lock(a_semaphore_id, a_process_id, a_timeout))
     {
     }
 
     ~Scoped_guard()
     {
-        st::arm::m4::wb::rm0434::system::hsem::_2_step::unlock(this->semaphore_id, this->process_id);
+        soc::st::arm::m4::wb::rm0434::system::hsem::_2_step::unlock(this->semaphore_id, this->process_id);
     }
 
     bool is_locked() const
@@ -157,4 +157,4 @@ private:
     std::uint8_t process_id;
     bool locked;
 };
-} // namespace xmcu::soc
+} // namespace xmcu

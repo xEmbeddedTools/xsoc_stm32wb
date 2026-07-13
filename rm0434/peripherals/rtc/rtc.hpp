@@ -9,9 +9,9 @@
 #include <rm0434/clocks/sources/lse.hpp>
 #include <rm0434/clocks/sources/lsi.hpp>
 #include <rm0434/rcc.hpp>
-#include <soc/Scoped_guard.hpp>
 #include <xmcu/Duration.hpp>
 #include <xmcu/Non_copyable.hpp>
+#include <xmcu/Scoped_guard.hpp>
 #include <xmcu/bit.hpp>
 #include <xmcu/time_utils.hpp>
 
@@ -54,8 +54,8 @@ public:
     static void set_clock(Milliseconds a_world_millis);
 
     /*
-    * @brief Invalidates the RTC time.
-    */
+     * @brief Invalidates the RTC time.
+     */
     static void unset_clock();
 
     /**
@@ -113,8 +113,8 @@ template<> void rcc<peripherals::rtc>::enable<clocks::sources::lse>(bool a_enabl
 template<> void rcc<peripherals::rtc>::enable<clocks::sources::hse>(bool a_enable_in_lp);
 } // namespace xmcu::soc::st::arm::m4::wb::rm0434
 
-namespace xmcu::soc {
-template<> class Scoped_guard<st::arm::m4::wb::rm0434::peripherals::backup_domain> : public Non_copyable
+namespace xmcu {
+template<> class Scoped_guard<soc::st::arm::m4::wb::rm0434::peripherals::backup_domain> : public Non_copyable
 {
 public:
     Scoped_guard()
@@ -130,7 +130,7 @@ public:
     }
 };
 
-template<> class Scoped_guard<st::arm::m4::wb::rm0434::peripherals::rtc> : private Non_copyable
+template<> class Scoped_guard<soc::st::arm::m4::wb::rm0434::peripherals::rtc> : private Non_copyable
 {
 public:
     Scoped_guard()
@@ -147,7 +147,7 @@ public:
     }
 
 private:
-    Scoped_guard<st::arm::m4::wb::rm0434::peripherals::backup_domain>
+    Scoped_guard<soc::st::arm::m4::wb::rm0434::peripherals::backup_domain>
         bd_guard; // Must be unlocked prior to unlocking RTC
 };
-} // namespace xmcu::soc
+} // namespace xmcu
