@@ -7,7 +7,6 @@
 
 // std
 #include <cstdint>
-#include <utility>
 
 // externals
 #include <stm32wbxx.h>
@@ -29,24 +28,26 @@ class Public_key_accelerator : private xmcu::Non_copyable
 public:
     enum class Mode : std::uint32_t
     {
-        montgomery_modular_exp = 0u,
-        montgomery_param_only = PKA_CR_MODE_0,
-        modular_exp_only = PKA_CR_MODE_1,
-        ecc_scalar = PKA_CR_MODE_5,
-        ecc_scalar_fast = PKA_CR_MODE_1 | PKA_CR_MODE_5,
-        ecdsa_sign = PKA_CR_MODE_2 | PKA_CR_MODE_5,
+        // Only uncommented modes are supported so far
+
+        // montgomery_modular_exp = 0u,
+        // montgomery_param_only = PKA_CR_MODE_0,
+        // modular_exp_only = PKA_CR_MODE_1,
+        // ecc_scalar = PKA_CR_MODE_5,
+        // ecc_scalar_fast = PKA_CR_MODE_1 | PKA_CR_MODE_5,
+        // ecdsa_sign = PKA_CR_MODE_2 | PKA_CR_MODE_5,
         ecdsa_verify = PKA_CR_MODE_1 | PKA_CR_MODE_2 | PKA_CR_MODE_5,
-        ecc_point_check = PKA_CR_MODE_3 | PKA_CR_MODE_5,
+        // ecc_point_check = PKA_CR_MODE_3 | PKA_CR_MODE_5,
         rsa_crt_exp = PKA_CR_MODE_0 | PKA_CR_MODE_1 | PKA_CR_MODE_2,
-        modular_inversion = PKA_CR_MODE_3,
-        arithmetic_add = PKA_CR_MODE_0 | PKA_CR_MODE_3,
-        arithmetic_sub = PKA_CR_MODE_1 | PKA_CR_MODE_3,
-        arithmetic_mul = PKA_CR_MODE_0 | PKA_CR_MODE_1 | PKA_CR_MODE_3,
-        arithmetic_comp = PKA_CR_MODE_2 | PKA_CR_MODE_3,
-        modular_reduction = PKA_CR_MODE_0 | PKA_CR_MODE_2 | PKA_CR_MODE_3,
-        modular_add = PKA_CR_MODE_1 | PKA_CR_MODE_2 | PKA_CR_MODE_3,
-        modular_sub = PKA_CR_MODE_0 | PKA_CR_MODE_1 | PKA_CR_MODE_2 | PKA_CR_MODE_3,
-        montgomery_mul_small = PKA_CR_MODE_4,
+        // modular_inversion = PKA_CR_MODE_3,
+        // arithmetic_add = PKA_CR_MODE_0 | PKA_CR_MODE_3,
+        // arithmetic_sub = PKA_CR_MODE_1 | PKA_CR_MODE_3,
+        // arithmetic_mul = PKA_CR_MODE_0 | PKA_CR_MODE_1 | PKA_CR_MODE_3,
+        // arithmetic_comp = PKA_CR_MODE_2 | PKA_CR_MODE_3,
+        // modular_reduction = PKA_CR_MODE_0 | PKA_CR_MODE_2 | PKA_CR_MODE_3,
+        // modular_add = PKA_CR_MODE_1 | PKA_CR_MODE_2 | PKA_CR_MODE_3,
+        // modular_sub = PKA_CR_MODE_0 | PKA_CR_MODE_1 | PKA_CR_MODE_2 | PKA_CR_MODE_3,
+        // montgomery_mul_small = PKA_CR_MODE_4,
     };
 
     using enum Mode;
@@ -106,6 +107,14 @@ public:
             void* p_user_data = nullptr;
         };
 
+        struct Callback_rsa_crt_exp
+        {
+            using Function = void (*)(const Result<Mode::rsa_crt_exp>& a_result);
+
+            Function function = nullptr;
+            void* p_user_data = nullptr;
+        };
+
         template<Mode M> struct Callback_traits;
 
         void enable(const IRQ_config& a_irq_config);
@@ -158,7 +167,11 @@ private:
     void* user_func = nullptr;
     void* user_data = nullptr;
 
+    const void* p_active_context = nullptr;
+
     void load(const Context<Public_key_accelerator::Mode::ecdsa_verify>& a_ctx) const;
+    void load(const Context<Public_key_accelerator::Mode::rsa_crt_exp>& a_ctx) const;
+    void read(const Context<Public_key_accelerator::Mode::rsa_crt_exp>& a_ctx) const;
 
     template<Mode mode> static void
     dispach_irq(Public_key_accelerator* a_p_this, Interrupt::Source a_source, void* a_p_user_func, void* a_p_user_data);
@@ -190,10 +203,31 @@ template<> struct Public_key_accelerator::Context<Public_key_accelerator::Mode::
     const uint8_t* p_hash;
 };
 
+template<> struct Public_key_accelerator::Context<Public_key_accelerator::Mode::rsa_crt_exp>
+{
+    std::uint32_t modulus_size_bits;
+    std::uint32_t prime_size_bytes;
+
+    const uint8_t* p_dp;
+    const uint8_t* p_dq;
+    const uint8_t* p_qinv;
+    const uint8_t* p_p;
+    const uint8_t* p_q;
+
+    const uint8_t* p_ciphertext;
+
+    uint8_t* p_out_plaintext;
+};
+
 template<> struct Public_key_accelerator::Pooling::Result<Public_key_accelerator::Mode::ecdsa_verify>
 {
     Public_key_accelerator::Pooling::Status status = Status::busy;
     bool is_signature_valid = false;
+};
+
+template<> struct Public_key_accelerator::Pooling::Result<Public_key_accelerator::Mode::rsa_crt_exp>
+{
+    Public_key_accelerator::Pooling::Status status = Status::busy;
 };
 
 template<> struct Public_key_accelerator::Interrupt::Result<Public_key_accelerator::Mode::ecdsa_verify>
@@ -202,45 +236,20 @@ template<> struct Public_key_accelerator::Interrupt::Result<Public_key_accelerat
     bool is_signature_valid = false;
 };
 
+template<> struct Public_key_accelerator::Interrupt::Result<Public_key_accelerator::Mode::rsa_crt_exp>
+{
+    Public_key_accelerator::Interrupt::Source source = Source::operation_end;
+};
+
 template<> struct Public_key_accelerator::Interrupt::Callback_traits<Public_key_accelerator::Mode::ecdsa_verify>
 {
     using Type = Public_key_accelerator::Interrupt::Callback_ecdsa_verify;
 };
 
-template<Public_key_accelerator::Mode mode>
-void Public_key_accelerator::Interrupt::start(const Context<mode>& a_ctx,
-                                              const typename Callback_traits<mode>::Type& a_callback)
+template<> struct Public_key_accelerator::Interrupt::Callback_traits<Public_key_accelerator::Mode::rsa_crt_exp>
 {
-    Scoped_guard<nvic> guard;
-
-    this->p_pka->user_func = reinterpret_cast<void*>(a_callback.function);
-    this->p_pka->user_data = a_callback.p_user_data;
-    this->p_pka->irq_dispatcher = &Public_key_accelerator::dispach_irq<mode>;
-
-    this->p_pka->load(a_ctx);
-
-    bit::flag::set(&(PKA->CR), std::to_underlying(mode) | PKA_CR_PROCENDIE | PKA_CR_RAMERRIE | PKA_CR_ADDRERRIE);
-    bit::flag::set(&(PKA->CR), PKA_CR_START);
-}
-
-template<Public_key_accelerator::Mode mode>
-void Public_key_accelerator::dispach_irq(Public_key_accelerator* a_p_this,
-                                         Public_key_accelerator::Interrupt::Source a_source,
-                                         void* a_p_user_func,
-                                         void* a_p_user_data)
-{
-    hkm_assert(nullptr != a_p_this);
-    hkm_assert(nullptr != a_p_user_func);
-
-    using CallbackType = typename Interrupt::Callback_traits<mode>::Type::Function;
-    auto callback_fn = reinterpret_cast<CallbackType>(a_p_user_func);
-
-    Interrupt::Result<mode> result {};
-
-    a_p_this->populate_result<mode>(result, a_source);
-
-    callback_fn(result);
-}
+    using Type = Public_key_accelerator::Interrupt::Callback_rsa_crt_exp;
+};
 
 } // namespace xmcu::soc::st::arm::m4::wb::rm0434::peripherals
 
@@ -260,10 +269,7 @@ namespace xmcu::soc {
 template<> class peripheral<st::arm::m4::wb::rm0434::peripherals::Public_key_accelerator> : private non_constructible
 {
 public:
-    static st::arm::m4::wb::rm0434::peripherals::Public_key_accelerator create()
-    {
-        return st::arm::m4::wb::rm0434::peripherals::Public_key_accelerator(IRQn_Type::PKA_IRQn);
-    }
+    static st::arm::m4::wb::rm0434::peripherals::Public_key_accelerator create();
 };
 
 } // namespace xmcu::soc
