@@ -11,7 +11,6 @@
 #include <rm0434/utils/tick_counter.hpp>
 #include <rm0434/utils/wait_until.hpp>
 #include <xmcu/bit.hpp>
-#include <soc/Scoped_guard.hpp>
 
 namespace xmcu::soc::st::arm::m4::wb::rm0434::clocks::sources {
 using namespace xmcu;

@@ -10,7 +10,6 @@
 #include <rm0434/clocks/sources/msi.hpp>
 #include <rm0434/clocks/sources/pll.hpp>
 #include <rm0434/system/hsem/hsem.hpp>
-#include <soc/Scoped_guard.hpp>
 
 // xmcu
 #include <xmcu/Duration.hpp>
