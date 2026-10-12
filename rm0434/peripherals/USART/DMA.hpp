@@ -43,7 +43,7 @@ public:
 
             void stop()
             {
-                bit::flag::clear(&(this->p_DMA->p_rx_channel_registers->CCR), DMA_CCR_EN);
+                bit::flag::clear(&(this->p_DMA->p_rx_channel_registers->CCR), DMA_CCR_EN | DMA_CCR_CIRC);
             }
 
         private:
