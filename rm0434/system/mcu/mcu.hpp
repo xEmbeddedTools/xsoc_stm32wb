@@ -109,6 +109,10 @@ public:
     {
         __set_MSP(a_address);
     }
+    static void set_program_stack_pointer(std::uint32_t a_address)
+    {
+        __set_PSP(a_address);
+    }
 
     static void set_DWT_mode(DWT_mode a_mode)
     {
@@ -153,16 +157,6 @@ public:
         static Reset_source stored_value = l_reader();
         return stored_value;
     }
-
-    static constexpr Reset_source flags[] = {
-        Reset_source::pin,
-        Reset_source::bor,
-        Reset_source::window_watchdog,
-        Reset_source::independent_window_watchdog,
-        Reset_source::software,
-        Reset_source::low_power,
-        Reset_source::option_byte,
-    };
 
     static constexpr Package get_package()
     {

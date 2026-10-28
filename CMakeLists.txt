@@ -10,8 +10,12 @@ if (XMCU_SOC_MODEL STREQUAL "XMCU_SOC_MODEL_STM32WB35CEU6A")
                       "${CMAKE_CURRENT_LIST_DIR}/rm0434/*.asm"
                       "${CMAKE_CURRENT_LIST_DIR}/rm0434/*.hpp"
                       "${CMAKE_CURRENT_LIST_DIR}/rm0434/*.h"
-                      "${CMAKE_CURRENT_LIST_DIR}/CMSIS/Device/ST/STM32WBxx/Source/Templates/gcc/startup_stm32wb35xx_cm4.s"
                       "${CMAKE_CURRENT_LIST_DIR}/CMSIS/Device/ST/STM32WBxx/Source/Templates/system_stm32wbxx.c")
+
+    if (NOT DEFINED XMCU_USE_CUSTOM_STARTUP_FILE)
+        list(APPEND XMCU_SOC_SRC "${CMAKE_CURRENT_LIST_DIR}/CMSIS/Device/ST/STM32WBxx/Source/Templates/gcc/startup_stm32wb35xx_cm4.s")
+    endif()
+
     add_library(XMCU_SOC OBJECT ${XMCU_SOC_SRC})
     target_compile_definitions(XMCU_SOC PUBLIC "XMCU_SOC_MODEL_STM32WB35CEU6A" "STM32WB35xx")
 elseif (XMCU_SOC_MODEL STREQUAL "XMCU_SOC_MODEL_STM32WB55CGU6")
@@ -21,8 +25,12 @@ elseif (XMCU_SOC_MODEL STREQUAL "XMCU_SOC_MODEL_STM32WB55CGU6")
                       "${CMAKE_CURRENT_LIST_DIR}/rm0434/*.asm"
                       "${CMAKE_CURRENT_LIST_DIR}/rm0434/*.hpp"
                       "${CMAKE_CURRENT_LIST_DIR}/rm0434/*.h"
-                      "${CMAKE_CURRENT_LIST_DIR}/CMSIS/Device/ST/STM32WBxx/Source/Templates/gcc/startup_stm32wb55xx_cm4.s"
                       "${CMAKE_CURRENT_LIST_DIR}/CMSIS/Device/ST/STM32WBxx/Source/Templates/system_stm32wbxx.c")
+    
+    if (NOT DEFINED XMCU_USE_CUSTOM_STARTUP_FILE)
+        list(APPEND XMCU_SOC_SRC "${CMAKE_CURRENT_LIST_DIR}/CMSIS/Device/ST/STM32WBxx/Source/Templates/gcc/startup_stm32wb55xx_cm4.s")
+    endif()
+
     add_library(XMCU_SOC OBJECT ${XMCU_SOC_SRC})
     target_compile_definitions(XMCU_SOC PUBLIC "XMCU_SOC_MODEL_STM32WB55CGU6" "STM32WB55xx")
 else()
